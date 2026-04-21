@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Spell It Out | Men Can Clean Too!</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--orange:#E87722;--navy:#1B2A4A;--gold:#FFE066;--green:#00c864;--light:#F5F5F5;--card:#fff;--border:#F0EBE3;--muted:#888;}
+html,body{height:100%;}
+body{font-family:'Open Sans',sans-serif;background:var(--light);}
+#gameRoot{position:fixed;inset:0;z-index:9000;background:var(--light);display:flex;flex-direction:column;align-items:center;overflow:hidden;}
+.game-header{width:100%;max-width:520px;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;flex-shrink:0;background:var(--card);border-bottom:1px solid var(--border);}
+.back-btn{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:800;letter-spacing:2px;color:var(--navy);text-transform:uppercase;border:1.5px solid rgba(27,42,74,0.2);padding:6px 12px;border-radius:20px;cursor:pointer;background:none;}
+.game-title-bar{font-family:'Montserrat',sans-serif;font-size:14px;font-weight:900;color:var(--navy);}
+.prize-badge{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:800;background:var(--orange);color:#fff;padding:4px 10px;border-radius:20px;}
+.sound-btn{background:none;border:none;font-size:18px;cursor:pointer;padding:4px;}
+
+/* MAIN GAME AREA */
+.game-area{width:100%;max-width:520px;flex:1;display:flex;flex-direction:column;align-items:center;padding:0 16px;overflow:hidden;}
+
+/* GALLOWS CANVAS */
+#gallowsCanvas{width:100%;max-width:280px;flex-shrink:0;}
+
+/* WRONG GUESSES */
+.wrong-display{display:flex;gap:6px;justify-content:center;margin-bottom:8px;flex-shrink:0;}
+.wrong-bubble{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;font-family:'Montserrat',sans-serif;}
+.wrong-bubble.used{background:#ff4444;color:#fff;}
+.wrong-bubble.empty{background:#eee;color:#ccc;border:1.5px solid #ddd;}
+
+/* WORD DISPLAY */
+.word-display{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:8px;flex-shrink:0;}
+.letter-box{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.letter-char{font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:var(--navy);min-width:24px;text-align:center;min-height:28px;}
+.letter-line{width:24px;height:3px;background:var(--navy);border-radius:2px;}
+.letter-char.reveal{animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes popIn{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+/* CLUE */
+.clue-box{background:rgba(232,119,34,0.08);border:1px solid rgba(232,119,34,0.2);border-radius:10px;padding:8px 14px;margin-bottom:8px;font-size:11px;color:var(--navy);line-height:1.5;max-width:100%;text-align:center;font-style:italic;flex-shrink:0;}
+
+/* KEYBOARD */
+.keyboard{width:100%;max-width:520px;flex-shrink:0;padding:0 8px 8px;}
+.kb-row{display:flex;gap:5px;justify-content:center;margin-bottom:5px;}
+.kb-key{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:800;width:32px;height:38px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;box-shadow:0 2px 4px rgba(0,0,0,.06);flex-shrink:0;}
+.kb-key:active{transform:scale(.92);}
+.kb-key.correct{background:var(--green);color:#fff;border-color:var(--green);}
+.kb-key.wrong{background:#ddd;color:#aaa;border-color:#ddd;cursor:default;}
+.kb-key.disabled{opacity:.4;cursor:default;}
+
+/* SCREENS */
+.screen{position:fixed;inset:0;z-index:9001;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;overflow-y:auto;}
+.screen.active{display:flex;}
+
+/* START */
+#startScreen{background:linear-gradient(160deg,#0a1628 0%,#1B2A4A 75%,#2a1000 100%);}
+.start-icon{font-size:56px;margin-bottom:8px;animation:float 3s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.start-title{font-family:'Montserrat',sans-serif;font-size:32px;font-weight:900;color:#fff;margin-bottom:6px;line-height:1.1;}
+.start-title em{color:var(--orange);font-style:normal;}
+.start-sub{font-size:13px;color:rgba(255,255,255,.5);line-height:1.65;max-width:280px;margin-bottom:16px;}
+.tier-ladder{width:100%;max-width:320px;margin-bottom:18px;}
+.tier-row{display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);margin-bottom:4px;}
+.tier-row.won{background:rgba(232,119,34,.12);border-color:rgba(232,119,34,.3);}
+.tr-miss{font-family:'Montserrat',sans-serif;font-weight:900;font-size:13px;color:var(--orange);min-width:70px;text-align:left;}
+.tr-prize{flex:1;font-size:12px;color:rgba(255,255,255,.65);}
+.tr-lock{font-size:13px;}
+.start-btn{background:var(--orange);color:#fff;font-family:'Montserrat',sans-serif;font-weight:900;font-size:14px;letter-spacing:2px;text-transform:uppercase;padding:16px 40px;border-radius:14px;border:none;cursor:pointer;width:100%;max-width:300px;}
+
+/* WIN */
+#winScreen{background:linear-gradient(160deg,#021a00 0%,#0d2a00 100%);}
+.win-burst{font-size:56px;margin-bottom:6px;animation:burst .6s cubic-bezier(.34,1.56,.64,1);}
+@keyframes burst{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}
+.win-big{font-family:'Montserrat',sans-serif;font-size:44px;font-weight:900;color:#fff;margin-bottom:4px;}
+.win-tier-badge{font-family:'Montserrat',sans-serif;font-size:11px;font-weight:800;background:var(--orange);color:#fff;padding:4px 12px;border-radius:20px;display:inline-block;margin-bottom:8px;}
+.win-word{font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:var(--gold);margin-bottom:4px;letter-spacing:4px;}
+.win-clue{font-size:13px;color:rgba(255,255,255,.6);line-height:1.65;max-width:300px;margin-bottom:14px;font-style:italic;}
+.prize-box{background:rgba(255,255,255,.05);border:1.5px solid rgba(232,119,34,.4);border-radius:16px;padding:16px 18px;width:100%;max-width:300px;margin-bottom:12px;}
+.prize-box-label{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:800;letter-spacing:3px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:6px;}
+.prize-box-val{font-family:'Montserrat',sans-serif;font-size:18px;font-weight:900;color:var(--gold);margin-bottom:4px;}
+.prize-box-how{font-size:12px;color:rgba(255,255,255,.55);line-height:1.5;}
+.prize-box-code{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:900;color:var(--orange);margin-top:6px;}
+.book-btn{display:block;width:100%;max-width:300px;background:var(--orange);color:#fff;font-family:'Montserrat',sans-serif;font-weight:900;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;padding:15px;border-radius:12px;text-decoration:none;text-align:center;margin-bottom:6px;}
+.win-fine{font-size:10px;color:rgba(255,255,255,.2);max-width:280px;margin-bottom:14px;}
+.share-section{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px;width:100%;max-width:300px;margin-bottom:12px;}
+.share-title{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;color:rgba(255,255,255,.7);margin-bottom:4px;}
+.share-sub{font-size:11px;color:rgba(255,255,255,.35);margin-bottom:8px;line-height:1.5;}
+.share-preview{background:rgba(0,0,0,.25);border-radius:8px;padding:10px;font-size:11px;color:rgba(255,255,255,.6);line-height:1.6;margin-bottom:10px;text-align:left;font-family:monospace;white-space:pre-wrap;}
+.share-btns{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
+.share-btn{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:800;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;}
+.sb-fb{background:#1877F2;color:#fff;}.sb-ig{background:linear-gradient(45deg,#f09433,#dc2743,#bc1888);color:#fff;}.sb-tw{background:#000;color:#fff;}.sb-sms{background:var(--green);color:#fff;}.sb-copy{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.15);}
+.play-again-btn{background:rgba(255,255,255,.08);color:#fff;font-family:'Montserrat',sans-serif;font-weight:900;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;padding:13px 28px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);cursor:pointer;margin-bottom:6px;}
+
+/* LOSE */
+#loseScreen{background:rgba(10,5,0,.96);backdrop-filter:blur(6px);}
+.lose-icon{font-size:52px;margin-bottom:8px;}
+.lose-title{font-family:'Montserrat',sans-serif;font-size:24px;font-weight:900;color:#fff;margin-bottom:6px;}
+.lose-word-reveal{font-family:'Montserrat',sans-serif;font-size:13px;color:rgba(255,255,255,.5);margin-bottom:4px;}
+.lose-word{font-family:'Montserrat',sans-serif;font-size:28px;font-weight:900;color:var(--orange);letter-spacing:4px;margin-bottom:6px;}
+.lose-clue{font-size:13px;color:rgba(255,255,255,.5);line-height:1.65;max-width:280px;margin-bottom:20px;font-style:italic;}
+.try-btn{background:var(--orange);color:#fff;font-family:'Montserrat',sans-serif;font-weight:900;font-size:14px;letter-spacing:2px;text-transform:uppercase;padding:16px 40px;border-radius:12px;border:none;cursor:pointer;width:100%;max-width:280px;margin-bottom:10px;}
+
+.particle{position:fixed;pointer-events:none;z-index:99999;border-radius:50%;animation:pBurst var(--dur,.7s) ease-out forwards;}
+@keyframes pBurst{0%{transform:translate(0,0) scale(1);opacity:1;}100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0;}}
+</style>
+</head>
+<body>
+<div id="gameRoot">
+
+<!-- HEADER -->
+<div class="game-header">
+  <button class="back-btn" onclick="window.top.location.href='https://www.mencancleantoo.com/win';">← All Games</button>
+  <div class="game-title-bar">🔤 Spell It Out</div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔊</button>
+    <div class="prize-badge" id="headerBadge">Play to Win</div>
+  </div>
+</div>
+
+<!-- GAME AREA -->
+<div class="game-area" id="gameArea">
+  <canvas id="gallowsCanvas"></canvas>
+  <div class="wrong-display" id="wrongDisplay"></div>
+  <div class="word-display" id="wordDisplay"></div>
+  <div class="clue-box" id="clueBox" style="display:none;"></div>
+  <!-- Quote box — fires on every letter guess -->
+  <div id="quoteBox" style="margin:6px 12px 0;padding:8px 12px;background:rgba(27,42,74,.6);border-left:3px solid #E87722;border-radius:0 8px 8px 0;font-size:11px;line-height:1.55;color:rgba(255,255,255,.75);min-height:36px;transition:opacity .35s ease,transform .35s ease;opacity:0;"></div>
+  <div class="keyboard" id="keyboard"></div>
+</div>
+
+<!-- START SCREEN -->
+<div class="screen active" id="startScreen">
+  <div class="start-icon">🔤</div>
+  <div class="start-title">Spell It<br><em>Out</em></div>
+  <p class="start-sub">Guess the hidden word — one letter at a time. Fewer wrong guesses = bigger prize.</p>
+  <div class="tier-ladder" id="startLadder"></div>
+  <button class="start-btn" onclick="startGame()">Start →</button>
+</div>
+
+<!-- WIN SCREEN -->
+<div class="screen" id="winScreen">
+  <div class="win-burst" id="winBurst">🎉</div>
+  <div class="win-big">You got it.</div>
+  <div class="win-tier-badge" id="winTierBadge">Tier 1</div>
+  <div class="win-word" id="winWord"></div>
+  <div class="win-clue" id="winClue"></div>
+  <div class="prize-box">
+    <div class="prize-box-label">Your Prize</div>
+    <div class="prize-box-val" id="prizeVal"></div>
+    <div class="prize-box-how" id="prizeHow"></div>
+    <div class="prize-box-code" id="prizeCode"></div>
+  </div>
+  <a id="bookBtn" href="#" class="book-btn" target="_blank">Book Now
+    <span style="font-size:10px;font-weight:600;opacity:.75;display:block;margin-top:2px;">2 minutes · No contract · Cancel anytime</span>
+  </a>
+  <div class="win-fine">New clients only. One per household. Can't be combined with the Free 1 Hour Power Clean.</div>
+  <div class="share-section">
+    <div class="share-title" id="shareTitle">Send this to a friend</div>
+    <div class="share-sub" id="shareSub">They can play and win something real too.</div>
+    <div class="share-preview" id="sharePreview"></div>
+    <!-- Tier 3+ lock box -->
+    <div id="shareLockBox" style="display:none;background:rgba(232,119,34,.1);border:1.5px solid rgba(232,119,34,.3);border-radius:12px;padding:14px;margin-bottom:10px;text-align:center;">
+      <div style="font-size:24px;margin-bottom:6px;">🔒</div>
+      <div style="font-family:Montserrat,sans-serif;font-size:13px;font-weight:800;color:#fff;margin-bottom:4px;">Share to unlock your prize code</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5);">One tap. Your code appears instantly.</div>
+    </div>
+    <!-- Unlocked code box -->
+    <div id="shareUnlockBox" style="display:none;background:rgba(0,200,100,.1);border:1.5px solid rgba(0,200,100,.4);border-radius:12px;padding:14px;margin-bottom:10px;text-align:center;">
+      <div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:4px;">Your prize code</div>
+      <div style="font-family:Montserrat,sans-serif;font-size:22px;font-weight:900;color:#00c864;" id="unlockedPrizeCode"></div>
+    </div>
+    <button id="mainShareBtn" onclick="doMainShare()" style="width:100%;background:rgba(255,255,255,.1);color:#fff;font-family:Montserrat,sans-serif;font-weight:900;font-size:14px;padding:14px;border-radius:10px;border:none;cursor:pointer;margin-top:4px;">📲 Share</button>
+  </div>
+  <button class="play-again-btn" onclick="startGame()">Play Again</button>
+  <button class="play-again-btn" onclick="window.top.location.href='https://www.mencancleantoo.com/win';" style="margin-top:4px;">← All Games</button>
+</div>
+
+<!-- LOSE SCREEN -->
+<div class="screen" id="loseScreen">
+  <div class="lose-icon">💀</div>
+  <div class="lose-title" id="loseTitle">So close.</div>
+  <div class="lose-word-reveal">The word was:</div>
+  <div class="lose-word" id="loseWord"></div>
+  <div class="lose-clue" id="loseClue"></div>
+  <button class="try-btn" onclick="startGame()">Try Again →</button>
+  <button id="loseShareBtn" onclick="doLoseShare()" style="width:100%;background:rgba(255,255,255,.08);color:#fff;font-family:Montserrat,sans-serif;font-weight:900;font-size:13px;padding:13px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);cursor:pointer;margin-top:6px;margin-bottom:6px;">📲 Challenge a friend to beat your score</button>
+  <button class="play-again-btn" onclick="window.top.location.href='https://www.mencancleantoo.com/win';" style="background:transparent;color:rgba(255,255,255,.4);border-color:rgba(255,255,255,.15);margin-top:4px;">← All Games</button>
+</div>
+
+</div>
+<script>
+var MR=Math.random;
+var SHEETDB_URL='https://sheetdb.io/api/v1/acbsxaeinq2dj';
+
+// ══════════════════════════════════════
+// 32-QUOTE LIBRARY — mencancleantoo.com/values
+// ══════════════════════════════════════
+var QUOTES=[
+  // ── SCRIPTURE (6) ──
+  {q:"Jesus is the way, the truth, and the life.",s:"John 14:6"},
+  {q:"When you light a lamp, you don\u2019t hide it under a bowl.",s:"Luke 8:16 \u2014 Transparency"},
+  {q:"You will know the truth, and the truth will set you free.",s:"John 8:31\u201332 \u2014 Truth"},
+  {q:"Rejoice with those who rejoice; mourn with those who mourn.",s:"Romans 12:14\u201315 \u2014 Empathy"},
+  {q:"People look at the outward appearance, but the Lord looks at the heart.",s:"1 Samuel 16:7 \u2014 Character"},
+  {q:"A man reaps what he sows.",s:"Galatians 6:7\u20138 \u2014 Accountability"},
+  // ── PRINCIPLES (18) ──
+  {q:"We never compromise non-negotiables.",s:"MCCT \u2014 Principles"},
+  {q:"We micromanage until there is trust.",s:"MCCT \u2014 Principles"},
+  {q:"What brought us here won\u2019t take us to the next level.",s:"MCCT \u2014 Principles"},
+  {q:"No one has 100% job security \u2014 not even the Founder.",s:"MCCT \u2014 Principles"},
+  {q:"We treat our customers\u2019 money better than our own.",s:"MCCT \u2014 Principles"},
+  {q:"We strive to be radically open-minded but not easily persuaded.",s:"MCCT \u2014 Principles"},
+  {q:"We fight any temptation to lower our expectations or standards.",s:"MCCT \u2014 Principles"},
+  {q:"Mistakes are okay. Not learning from them is not.",s:"MCCT \u2014 Principles"},
+  {q:"Trust = Speed. It\u2019s a currency more valuable than money.",s:"MCCT \u2014 Principles"},
+  {q:"We build a dream team where everyone can speak up.",s:"MCCT \u2014 Principles"},
+  {q:"The better each of us does, the better the company does.",s:"MCCT \u2014 Principles"},
+  {q:"We create positive peer pressure by challenging one another.",s:"MCCT \u2014 Principles"},
+  {q:"We\u2019re not just cleaning homes. We\u2019re building trust.",s:"MCCT \u2014 Principles"},
+  {q:"Excellence isn\u2019t a standard we hit sometimes. It\u2019s who we are.",s:"MCCT \u2014 Principles"},
+  {q:"Speed without integrity is just noise.",s:"MCCT \u2014 Principles"},
+  {q:"We don\u2019t cut corners. We clean them.",s:"MCCT \u2014 Principles"},
+  {q:"Accountability isn\u2019t punishment. It\u2019s how we grow.",s:"MCCT \u2014 Principles"},
+  {q:"Do it right the first time. Every time.",s:"MCCT \u2014 Principles"},
+  // ── NON-NEGOTIABLES (8) ──
+  {q:"Communication is required. Failure to communicate leads to termination.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"If we can\u2019t trust you, we won\u2019t schedule you.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"Repeated mistakes are not tolerated. Learn, or move on.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"Communicate bad news fast. Silence is worse than the problem.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"Own it. We move quickly past mistakes when full responsibility is taken.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"Be truthful, sincere, and transparent in all actions and intentions.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"Show up. Do the work. Tell the truth.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"No gossip. No excuses. No drama.",s:"MCCT \u2014 Non-Negotiables"},
+  // ── IDENTITY (12) ──
+  {q:"When you invite someone into your home, it\u2019s more than cleaning.",s:"MCCT \u2014 Who We Are"},
+  {q:"These aren\u2019t just words on a wall.",s:"MCCT \u2014 Living It Out"},
+  {q:"Every cleaner we send into your home is held to these standards.",s:"MCCT \u2014 Living It Out"},
+  {q:"If we ever fall short, we want to know. That\u2019s truth-seeking in practice.",s:"MCCT \u2014 Living It Out"},
+  {q:"You\u2019re sharing your kids\u2019 playroom, your bedroom, and your memories.",s:"MCCT \u2014 Who We Are"},
+  {q:"We show up so you can feel safe, respected, and cared for every time.",s:"MCCT \u2014 Who We Are"},
+  {q:"Founded on faith. Built on trust. Serving Springfield since 2020.",s:"MCCT \u2014 Who We Are"},
+  {q:"172 Google reviews. 4.8 stars. That\u2019s not luck. That\u2019s character.",s:"MCCT \u2014 Living It Out"},
+  {q:"We\u2019re not the cheapest. We\u2019re the most consistent.",s:"MCCT \u2014 Who We Are"},
+  {q:"A clean home is a peaceful home. That\u2019s what we\u2019re here for.",s:"MCCT \u2014 Who We Are"},
+  {q:"We hire people who actually care. That\u2019s rarer than it sounds.",s:"MCCT \u2014 Who We Are"},
+  {q:"No contracts. No cancellation fees. Just cleaner spaces.",s:"MCCT \u2014 Who We Are"},
+  // ── CULTURE (6) ──
+  {q:"Entitlement, complacency, and gossip have no place here.",s:"MCCT \u2014 Culture"},
+  {q:"Negativity and pessimism are not part of how we operate.",s:"MCCT \u2014 Culture"},
+  {q:"We take care of our health because the work demands it.",s:"MCCT \u2014 Culture"},
+  {q:"Taking advice from the wrong people is how good things fall apart.",s:"MCCT \u2014 Culture"},
+  {q:"Complacency is the enemy of excellence.",s:"MCCT \u2014 Culture"},
+  {q:"A clean reputation takes years to build and seconds to lose.",s:"MCCT \u2014 Culture"},
+];
+
+var lastQuoteIdx=-1;
+function getRandomQuote(){
+  var idx;
+  do{idx=Math.floor(MR()*QUOTES.length);}while(idx===lastQuoteIdx);
+  lastQuoteIdx=idx;
+  return QUOTES[idx];
+}
+
+function showQuote(){
+  var q=getRandomQuote();
+  var el=document.getElementById('quoteBox');
+  if(!el)return;
+  el.style.opacity='0';
+  el.style.transform='translateY(6px)';
+  setTimeout(function(){
+    el.innerHTML='<span class="q-text">\u201c'+q.q+'\u201d</span><span class="q-src"> \u2014 '+q.s+'</span>';
+    el.style.transition='opacity .35s ease, transform .35s ease';
+    el.style.opacity='1';
+    el.style.transform='translateY(0)';
+  },150);
+}
+
+// ══════════════════════════════════════
+// WORD BANK
+// ══════════════════════════════════════
+var WORDS=[
+  {word:'TRANSPARENCY',clue:'"When you light a lamp, you don\'t hide it." — Luke 8:16'},
+  {word:'TRUTH',clue:'"You will know the truth and the truth will set you free." — John 8:31-32'},
+  {word:'EMPATHY',clue:'"Rejoice with those who rejoice; mourn with those who mourn." — Romans 12:14-15'},
+  {word:'CHARACTER',clue:'"People look at the outward appearance, but the Lord looks at the heart." — 1 Samuel 16:7'},
+  {word:'ACCOUNTABILITY',clue:'"A man reaps what he sows." — Galatians 6:7-8'},
+  {word:'COMMUNICATION',clue:'Required. Failure to communicate leads to termination — no exceptions.'},
+  {word:'HONESTY',clue:'Truthful, sincere, and transparent in all actions, speech, and intentions.'},
+  {word:'TRUST',clue:'Trust = Speed. A currency more valuable than money.'},
+  {word:'RELIABILITY',clue:'4 cancellations in 3 years — that\'s reliability when it\'s a priority.'},
+  {word:'CONSISTENCY',clue:'Someone who shows up when they say they will and cleans it right every time.'},
+  {word:'STANDARDS',clue:'We fight any temptation to lower our expectations. Non-negotiable.'},
+  {word:'EXCELLENCE',clue:'We deliver a 10/10 experience every single time. Or we fix it.'},
+  {word:'RESPONSIBILITY',clue:'We own our decisions — good and bad.'},
+  {word:'SPRINGFIELD',clue:'Our home. Founded on faith. Built on trust. Serving since 2020.'},
+  {word:'FOUNDATION',clue:'"Jesus is the way, the truth, and the life." — John 14:6'},
+  {word:'PRINCIPLES',clue:'We never compromise non-negotiables. What brought us here won\'t take us to the next level.'},
+  {word:'OPENNESS',clue:'Radically open-minded but not easily persuaded.'},
+  {word:'INTEGRITY',clue:'These aren\'t just words on a wall.'},
+  {word:'OWNERSHIP',clue:'Own it. Full responsibility. We move quickly past mistakes.'},
+  {word:'CLEANER',clue:'We hire for character, responsibility, communication, and care.'},
+];
+
+// ── TIERS ──
+var TIERS=[
+  {maxWrong:6,tier:1,label:'Tier 1',prize:'Free 1-Hr Clean',val:'Free 1-Hour Clean',how:"Add FREEHOUR to your booking notes.",code:'FREEHOUR',bookUrl:'https://mencancleantoo.bookingkoala.com/booknow/home_cleaning?form_id=4',emoji:'⭐',gp:false},
+  {maxWrong:4,tier:2,label:'Tier 2',prize:'20% Off',val:'20% Off Your First Clean',how:"Book online. Enter GAME20 at checkout.",code:'GAME20',bookUrl:'https://mencancleantoo.bookingkoala.com/booknow/home_cleaning?form_id=4&coupon=GAME20',emoji:'🎯',gp:false},
+  {maxWrong:2,tier:3,label:'Tier 3',prize:'Free Appliance Clean',val:'Free Appliance Add-On',how:"Oven or fridge. Add APPLIANCECLEAN to your notes.",code:'APPLIANCECLEAN',bookUrl:'https://mencancleantoo.bookingkoala.com/booknow/home_cleaning?form_id=4',emoji:'⚡',gp:true},
+  {maxWrong:0,tier:4,label:'Tier 4',prize:'$50 Off',val:'$50 Off Your First Clean',how:"IGOT50 is applied at checkout. Tap below.",code:'IGOT50',bookUrl:'https://mencancleantoo.bookingkoala.com/booknow/home_cleaning?form_id=4&coupon=IGOT50',emoji:'💰',gp:true},
+];
+function getTierForWrong(w){for(var i=TIERS.length-1;i>=0;i--){if(w<=TIERS[i].maxWrong)return TIERS[i];}return TIERS[0];}
+
+// ── STATE ──
+var currentWord=null,guessed=[],wrongCount=0,state='start';
+var highestTier=parseInt(localStorage.getItem('hangman-tier')||'0');
+var usedWords=JSON.parse(localStorage.getItem('hangman-used')||'[]');
+var currentBg=0;           // 0-9 background index
+var consequences=[];       // shuffled consequence indices for this game
+var flashActive=false;
+
+// ══════════════════════════════════════
+// CANVAS + 10 BACKGROUNDS
+// ══════════════════════════════════════
+var canvas=document.getElementById('gallowsCanvas');
+var ctx2=canvas.getContext('2d');
+
+// Background scenes
+var BG_NAMES=['Park Tree','Barn Rafters','Mountain Cliff','Office Ceiling',
+              'Laundry Room','Kitchen Rack','Attic','Fire Escape','Church','Cleaning Truck'];
+
+function resizeGallows(){
+  var wrap=document.getElementById('gameArea');
+  var maxW=Math.min(wrap.offsetWidth,300);
+  var h=Math.round(maxW*0.72);
+  canvas.width=maxW*2;canvas.height=h*2;
+  canvas.style.width=maxW+'px';canvas.style.height=h+'px';
+  ctx2.scale(2,2);
+  drawScene();
+}
+window.addEventListener('resize',resizeGallows);
+
+function drawScene(){
+  var W=canvas.width/2,H=canvas.height/2;
+  ctx2.clearRect(0,0,W,H);
+  drawBackground(W,H);
+  drawHiddenDetails(W,H);
+  drawGallowsStructure(W,H);
+  drawFigure(W,H);
+  drawConsequences(W,H);
+}
+
+// ── 10 BACKGROUNDS ──
+function drawBackground(W,H){
+  var b=currentBg;
+  if(b===0) bgParkTree(W,H);
+  else if(b===1) bgBarn(W,H);
+  else if(b===2) bgMountain(W,H);
+  else if(b===3) bgOffice(W,H);
+  else if(b===4) bgLaundry(W,H);
+  else if(b===5) bgKitchen(W,H);
+  else if(b===6) bgAttic(W,H);
+  else if(b===7) bgFireEscape(W,H);
+  else if(b===8) bgChurch(W,H);
+  else bgTruck(W,H);
+}
+
+function bgParkTree(W,H){
+  // Sky gradient — golden hour
+  var g=ctx2.createLinearGradient(0,0,0,H);g.addColorStop(0,'#1a0a2e');g.addColorStop(0.5,'#3d1a6e');g.addColorStop(1,'#7c3a1a');
+  ctx2.fillStyle=g;ctx2.fillRect(0,0,W,H);
+  // Stars
+  ctx2.fillStyle='rgba(255,255,220,.7)';
+  [[.15,.1],[.35,.05],[.6,.12],[.8,.08],[.5,.18],[.25,.22]].forEach(function(s){
+    ctx2.beginPath();ctx2.arc(s[0]*W,s[1]*H,1.2,0,Math.PI*2);ctx2.fill();
+  });
+  // Crosses on hill (tiny, faint, always there)
+  drawCrosses(W*0.12,H*0.52,H*0.09);
+  // Ground
+  var fg=ctx2.createLinearGradient(0,H*.75,0,H);fg.addColorStop(0,'#1a4a0a');fg.addColorStop(1,'#0a2a05');
+  ctx2.fillStyle=fg;ctx2.fillRect(0,H*.75,W,H);
+  // Tree trunk (thick, bold)
+  ctx2.fillStyle='#5a2d0c';ctx2.fillRect(W*.42,H*.25,W*.06,H*.5);
+  // Tree foliage blobs
+  [[W*.45,H*.2,W*.22],[W*.3,H*.28,W*.16],[W*.6,H*.3,W*.15]].forEach(function(c){
+    ctx2.fillStyle='#1a5c0a';ctx2.beginPath();ctx2.arc(c[0],c[1],c[2],0,Math.PI*2);ctx2.fill();
+    ctx2.fillStyle='#228b14';ctx2.beginPath();ctx2.arc(c[0]-c[2]*.15,c[1]-c[2]*.15,c[2]*.7,0,Math.PI*2);ctx2.fill();
+  });
+  // Rope hook on branch
+  ctx2.strokeStyle='#5a2d0c';ctx2.lineWidth=3;
+  ctx2.beginPath();ctx2.moveTo(W*.55,H*.2);ctx2.lineTo(W*.62,H*.2);ctx2.stroke();
+}
+
+function bgBarn(W,H){
+  // Dark interior
+  var g=ctx2.createLinearGradient(0,0,0,H);g.addColorStop(0,'#1a0a05');g.addColorStop(1,'#3d1a05');
+  ctx2.fillStyle=g;ctx2.fillRect(0,0,W,H);
+  // Rafters (thick wooden beams)
+  ctx2.fillStyle='#5a2d0c';
+  [H*.08,H*.22].forEach(function(y){ctx2.fillRect(0,y,W,H*.04);});
+  // Barn wall planks
+  ctx2.strokeStyle='rgba(90,45,12,.6)';ctx2.lineWidth=2;
+  for(var x=0;x<W;x+=W*.12){ctx2.beginPath();ctx2.moveTo(x,0);ctx2.lineTo(x,H);ctx2.stroke();}
+  // Hay bales bottom
+  ctx2.fillStyle='#c8841a';
+  [[W*.05,H*.72,W*.18,H*.2],[W*.25,H*.75,W*.15,H*.18],[W*.72,H*.73,W*.18,H*.2]].forEach(function(r){
+    ctx2.beginPath();ctx2.roundRect(r[0],r[1],r[2],r[3],6);ctx2.fill();
+    ctx2.strokeStyle='#8B6010';ctx2.lineWidth=1.5;
+    for(var l=r[1]+8;l<r[1]+r[3];l+=10){ctx2.beginPath();ctx2.moveTo(r[0]+4,l);ctx2.lineTo(r[0]+r[2]-4,l);ctx2.stroke();}
+  });
+  // Light shaft
+  ctx2.fillStyle='rgba(255,220,100,.04)';
+  ctx2.beginPath();ctx2.moveTo(W*.6,0);ctx2.lineTo(W*.75,0);ctx2.lineTo(W,H);ctx2.lineTo(W*.8,H);ctx2.closePath();ctx2.fill();
+  drawCrosses(W*.05,H*.45,H*.07);
+}
+
+function bgMountain(W,H){
+  var g=ctx2.createLinearGradient(0,0,0,H);g.addColorStop(0,'#000820');g.addColorStop(0.4,'#0a1a3d');g.addColorStop(1,'#1a2a5a');
+  ctx2.fillStyle=g;ctx2.fillRect(0,0,W,H);
+  // Stars
+  ctx2.fillStyle='rgba(255,255,255,.8)';
+  for(var i=0;i<20;i++){ctx2.beginPath();ctx2.arc(MR()*W,MR()*H*.4,0.8+MR()*.8,0,Math.PI*2);ctx2.fill();}
+  // Moon
+  ctx2.fillStyle='#fffff0';ctx2.beginPath();ctx2.arc(W*.8,H*.12,H*.06,0,Math.PI*2);ctx2.fill();
+  // Mountains
+  [[0,H,W*.35,H*.3],[W*.25,H,W*.4,H*.2],[W*.5,H,W*.5,H*.1]].forEach(function(m,i){
+    ctx2.fillStyle=['#1a2a4a','#223050','#2a3860'][i];
+    ctx2.beginPath();ctx2.moveTo(m[0],m[1]);ctx2.lineTo(m[0]+m[2]/2,m[3]);ctx2.lineTo(m[0]+m[2],m[1]);ctx2.fill();
+  });
+  // Cliff edge where rope ties
+  ctx2.fillStyle='#3a4a6a';ctx2.fillRect(W*.5,H*.35,W*.5,H*.1);
+  ctx2.fillStyle='#4a5a7a';ctx2.fillRect(W*.5,H*.3,W*.08,H*.06);
+  // Valley below — fatal drop
+  var abyss=ctx2.createLinearGradient(0,H*.45,0,H);abyss.addColorStop(0,'rgba(0,0,0,0)');abyss.addColorStop(1,'rgba(0,0,0,.9)');
+  ctx2.fillStyle=abyss;ctx2.fillRect(0,H*.45,W,H);
+  drawCrosses(W*.08,H*.28,H*.08);
+}
+
+function bgOffice(W,H){
+  var g=ctx2.createLinearGradient(0,0,0,H);g.addColorStop(0,'#e8e8e0');g.addColorStop(1,'#c8c8b8');
+  ctx2.fillStyle=g;ctx2.fillRect(0,0,W,H);
+  // Ceiling tiles
+  ctx2.strokeStyle='rgba(0,0,0,.12)';ctx2.lineWidth=1;
+  for(var gx=0;gx<W;gx+=W*.2){ctx2.beginPath();ctx2.moveTo(gx,0);ctx2.lineTo(gx,H*.3);ctx2.stroke();}
+  for(var gy=0;gy<H*.3;gy+=H*.1){ctx2.beginPath();ctx2.moveTo(0,gy);ctx2.lineTo(W,gy);ctx2.stroke();}
+  // Fluorescent lights
+  ctx2.fillStyle='rgba(255,255,200,.6)';
+  [[W*.2,0,W*.3,H*.02],[W*.6,0,W*.3,H*.02]].forEach(function(r){ctx2.fillRect(r[0],r[1],r[2],r[3]);});
+  // Cubicle walls
+  ctx2.fillStyle='#8a7a6a';
+  [[0,H*.4,W*.02,H*.6],[W*.98,H*.4,W*.02,H*.6],[W*.48,H*.5,W*.04,H*.5]].forEach(function(r){ctx2.fillRect(r[0],r[1],r[2],r[3]);});
+  // Computer monitor on desk
+  ctx2.fillStyle='#2a2a2a';ctx2.fillRect(W*.6,H*.55,W*.25,H*.18);ctx2.fillStyle='#3a6a9a';ctx2.fillRect(W*.62,H*.57,W*.21,H*.14);
+  // "MCCT" on monitor screen (tiny)
+  ctx2.fillStyle='#fff';ctx2.font='bold '+Math.round(H*.04)+'px Montserrat,sans-serif';ctx2.textAlign='center';ctx2.fillText('MCCT',W*.725,H*.63);
+  ctx2.textAlign='left';
+  // Ceiling tile rope hook
+  ctx2.fillStyle='#888';ctx2.fillRect(W*.6,H*.04,W*.04,H*.04);
+  drawCrosses(W*.05,H*.15,H*.06);
+}
+
+function bgLaundry(W,H){
+  var g=ctx2.createLinearGradient(0,0,0,H);g.addColorStop(0,'#e0e8f0');g.addColorStop(1,'#c0c8d8');
+  ctx2.fillStyle=g;ctx2.fillRect(0,0,W,H);
+  // Tile floor
+  ctx2.strokeStyle='rgba(0,0,0,.08)';ctx2.lineWidth=1;
+  for(var fx=0;fx<W;fx+=W*.15){ctx2.beginPath();ctx2.moveTo(fx,H*.65);ctx2.lineTo(fx,H);ctx2.stroke();}
+  for(var fy=H*.65;fy<H;fy+=H*.1){ctx2.beginPath();ctx2.moveTo(0,fy);ctx2.lineTo(W,fy);ctx2.stroke();}
+  // Washer
+  ctx2.fillStyle='#c8d8e8';ctx2.beginPath();ctx2.roundRect(W*.05,H*.45,W*.32,H*.4,4);ctx2.fill();
+  ctx2.strokeStyle='#a8b8c8';ctx2.lineWidth=2;ctx2.stroke();
+  ctx2.strokeStyle='#8898a8';ctx2.lineWidth=2;ctx2.beginPath();ctx2.arc(W*.21,H*.63,W*.1,0,Math.PI*2);ctx2.stroke();
+  // Dryer
+  ctx2.fillStyle='#d8d0c8';ctx2.beginPath();ctx2.roundRect(W*.42,H*.45,W*.32,H*.4,4);ctx2.fill();
+  ctx2.strokeStyle='#b8b0a8';ctx2.lineWidth=2;ctx2.stroke();
+  ctx2.beginPath();ctx2.arc(W*.58,H*.63,W*.1,0,Math.PI*2);ctx2.stroke();
+  // Pipe on ceiling the rope hangs from
+  ctx2.strokeStyle='#888';ctx2.lineWidth=6;ctx2.beginPath();ctx2.moveTo(0,H*.12);ctx2.lineTo(W,H*.12);ctx2.stroke();
+  ctx2.strokeStyle='#666';ctx2.lineWidth=3;ctx2.beginPath();ctx2.moveTo(W*.6,H*.12);ctx2.lineTo(W*.6,H*.2);ctx2.stroke();
+  // Tiny MCCT on washer door
+  ctx2.fillStyle='rgba(27,42,74,.4)';ctx2.font='bold '+Math.round(H*.035)+'px Montserrat,sans-serif';ctx2.textAlign='center';ctx2.fillText('MCCT',W*.21,H*.63+4);ctx2.textAlign='left';
+  drawCrosses(W*.78,H*.25,H*.06);
+}
+
+function bgKitchen(W,H){
+  var g=ctx2.createLinearGradient(0,0,0,H);g.addColorStop(0,'#f5e8d0');g.addColorStop(1,'#e0c8a0');
+  ctx2.fillStyle=g;ctx2.fillRect(0,0,W,H);
+  // Cabinet doors
+  ctx2.fillStyle='#c8a870';
+  [[0,0,W*.35,H*.4],[W*.38,0,W*.35,H*.4],[W*.76,0,W*.24,H*.4]].forEach(function(r){
+    ctx2.beginPath();ctx2.roundRect(r[0]+2,r[1]+2,r[2]-4,r[3]-4,3);ctx2.fill();
+    ctx2.strokeStyle='#a88050';ctx2.lineWidth=1.5;ctx2.stroke();
+    // Cabinet knob
+    ctx2.fillStyle='#c0a040';ctx2.beginPath();ctx2.arc(r[0]+r[2]/2,r[3]*.8,4,0,Math.PI*2);ctx2.fill();
+  });
+  // Pot rack — horizontal bar with hooks
+  ctx2.strokeStyle='#808080';ctx2.lineWidth=5;ctx2.beginPath();ctx2.moveTo(W*.1,H*.12);ctx2.lineTo(W*.9,H*.12);ctx2.stroke();
+  // Hanging pots
+  [[W*.2,H*.18],[W*.4,H*.2],[W*.7,H*.17],[W*.85,H*.19]].forEach(function(p){
+    ctx2.strokeStyle='#606060';ctx2.lineWidth=2;ctx2.beginPath();ctx2.moveTo(p[0],H*.12);ctx2.lineTo(p[0],p[1]);ctx2.stroke();
+    ctx2.fillStyle='#808080';ctx2.beginPath();ctx2.ellipse(p[0],p[1]+W*.05,W*.04,W*.025,0,0,Math.PI*2);ctx2.fill();
+  });
+  // Counter
+  ctx2.fillStyle='#e0e0e0';ctx2.fillRect(0,H*.62,W,H*.08);
+  ctx2.strokeStyle='#c0c0c0';ctx2.lineWidth=2;ctx2.beginPath();ctx2.moveTo(0,H*.62);ctx2.lineTo(W,H*.62);ctx2.stroke();
+  // Tiny Bible on counter
+  ctx2.fillStyle='#1B2A4A';ctx2.beginPath();ctx2.roundRect(W*.05,H*.55,W*.08,H*.06,2);ctx2.fill();
+  ctx2.fillStyle='#FFD700';ctx2.font='bold '+Math.round(H*.04)+'px serif';ctx2.textAlign='center';ctx2.fillText('✝',W*.09,H*.6);ctx2.textAlign='left';
+  drawCrosses(W*.82,H*.43,H*.06);
+}
+
+function bgAttic(W,H){
+  var g=ctx2.createLinearGradient(0,0,0,H);g.addColorStop(0,'#1a1008');g.addColorStop(1,'#2a1808');
+  ctx2.fillStyle=g;ctx2.fillRect(0,0,W,H);
+  // Slanted roof beams
+  ctx2.strokeStyle='#5a3010';ctx2.lineWidth=8;ctx2.lineCap='round';
+  ctx2.beginPath();ctx2.moveTo(0,0);ctx2.lineTo(W*.5,H*.3);ctx2.stroke();
+  ctx2.beginPath();ctx2.moveTo(W,0);ctx2.lineTo(W*.5,H*.3);ctx2.stroke();
+  ctx2.beginPath();ctx2.moveTo(W*.1,0);ctx2.lineTo(W*.45,H*.25);ctx2.stroke();
+  ctx2.beginPath();ctx2.moveTo(W*.9,0);ctx2.lineTo(W*.55,H*.25);ctx2.stroke();
+  // Dust motes
+  ctx2.fillStyle='rgba(255,200,100,.15)';
+  for(var i=0;i<12;i++){ctx2.beginPath();ctx2.arc(MR()*W,MR()*H*.5,1+MR()*2,0,Math.PI*2);ctx2.fill();}
+  // Old boxes
+  [[W*.05,H*.65,W*.2,H*.25,'#5a4a2a'],[W*.3,H*.7,W*.18,H*.2,'#4a3a1a'],[W*.7,H*.62,W*.22,H*.28,'#6a5a3a']].forEach(function(b){
+    ctx2.fillStyle=b[4];ctx2.beginPath();ctx2.roundRect(b[0],b[1],b[2],b[3],3);ctx2.fill();
+    ctx2.strokeStyle='rgba(0,0,0,.3)';ctx2.lineWidth=1;ctx2.stroke();
+  });
+  // Cobweb corner
+  ctx2.strokeStyle='rgba(200,200,200,.25)';ctx2.lineWidth=0.8;
+  for(var i=0;i<5;i++){ctx2.beginPath();ctx2.moveTo(0,0);ctx2.lineTo(W*.15+i*W*.03,i*H*.08);ctx2.stroke();}
+  // MCCT scratched into a beam
+  ctx2.strokeStyle='rgba(200,150,80,.4)';ctx2.lineWidth=1;ctx2.font='bold '+Math.round(H*.04)+'px Montserrat,sans-serif';ctx2.textAlign='center';ctx2.fillStyle='rgba(200,150,80,.3)';ctx2.fillText('MCCT',W*.15,H*.18);ctx2.textAlign='left';
+  drawCrosses(W*.78,H*.08,H*.07);
+}
+
+function bgFireEscape(W,H){
+  // Night city
+  var g=ctx2.createLinearGradient(0,0,0,H);g.addColorStop(0,'#050820');g.addColorStop(0.6,'#0a1030');g.addColorStop(1,'#1a0505');
+  ctx2.fillStyle=g;ctx2.fillRect(0,0,W,H);
+  // Brick wall
+  var brickColors=['#6a2a1a','#5a2010','#7a3020'];
+  var bw=W*.12,bh=H*.05;
+  for(var row=0;row<H/bh+1;row++){
+    for(var col=0;col<W/bw+1;col++){
+      var offset=(row%2)*bw*.5;
+      ctx2.fillStyle=brickColors[(row+col)%3];
+      ctx2.fillRect(col*bw-offset,row*bh,bw-2,bh-1);
+    }
+  }
+  // City skyline
+  [[W*.02,H*.4,W*.08,H*.55],[W*.12,H*.35,W*.1,H*.6],[W*.25,H*.45,W*.07,H*.5],
+   [W*.6,H*.38,W*.09,H*.57],[W*.72,H*.42,W*.07,H*.53],[W*.82,H*.36,W*.11,H*.59]].forEach(function(b){
+    ctx2.fillStyle='rgba(10,20,40,.85)';ctx2.fillRect(b[0],b[1],b[2],b[3]);
+    // Windows
+    ctx2.fillStyle='rgba(255,220,80,.4)';
+    for(var wy=b[1]+6;wy<b[1]+b[3]-8;wy+=10){
+      for(var wx=b[0]+4;wx<b[0]+b[2]-4;wx+=8){
+        if(MR()>.4)ctx2.fillRect(wx,wy,4,5);
+      }
+    }
+  });
+  // Fire escape railing
+  ctx2.strokeStyle='#404040';ctx2.lineWidth=3;ctx2.beginPath();ctx2.moveTo(0,H*.35);ctx2.lineTo(W*.5,H*.35);ctx2.stroke();
+  ctx2.lineWidth=2;
+  for(var x=0;x<W*.5;x+=W*.06){ctx2.beginPath();ctx2.moveTo(x,H*.35);ctx2.lineTo(x,H*.55);ctx2.stroke();}
+  // Hook on wall
+  ctx2.strokeStyle='#888';ctx2.lineWidth=4;ctx2.beginPath();ctx2.arc(W*.62,H*.12,H*.03,Math.PI*.5,Math.PI*1.5);ctx2.stroke();
+  drawCrosses(W*.8,H*.25,H*.065);
+}
+
+function bgChurch(W,H){
+  // Dark interior
+  var g=ctx2.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0a0510');g.addColorStop(1,'#1a0a28');
+  ctx2.fillStyle=g;ctx2.fillRect(0,0,W,H);
+  // Stained glass windows (left and right)
+  var colors=['#cc2200','#E87722','#FFD700','#1a5a1a','#1a2a9a'];
+  [[W*.04,H*.15,W*.14,H*.35],[W*.82,H*.15,W*.14,H*.35]].forEach(function(win){
+    // Window arch
+    ctx2.fillStyle='#0a0510';ctx2.beginPath();ctx2.roundRect(win[0],win[1],win[2],win[3],win[2]/2);ctx2.fill();
+    // Colored panes
+    var pw=win[2]/3;
+    for(var ci=0;ci<3;ci++){
+      for(var ri=0;ri<4;ri++){
+        ctx2.fillStyle=colors[(ci+ri+Math.floor(win[0]))%5];ctx2.globalAlpha=0.35;
+        ctx2.fillRect(win[0]+ci*pw,win[1]+ri*win[3]/5,pw-1,win[3]/5-1);
+      }
+    }
+    ctx2.globalAlpha=1;
+    // Glow
+    ctx2.fillStyle='rgba(200,150,50,.08)';ctx2.beginPath();ctx2.roundRect(win[0]-4,win[1]-4,win[2]+8,win[3]+8,win[2]/2);ctx2.fill();
+  });
+  // Pews
+  ctx2.fillStyle='#4a2a10';
+  [[W*.02,H*.65,W*.42,H*.08],[W*.02,H*.76,W*.42,H*.08],[W*.56,H*.65,W*.42,H*.08],[W*.56,H*.76,W*.42,H*.08]].forEach(function(p){
+    ctx2.beginPath();ctx2.roundRect(p[0],p[1],p[2],p[3],3);ctx2.fill();
+  });
+  // Altar cross — large, prominent
+  ctx2.strokeStyle='rgba(255,215,0,.5)';ctx2.lineWidth=5;ctx2.lineCap='round';
+  ctx2.beginPath();ctx2.moveTo(W*.49,H*.15);ctx2.lineTo(W*.49,H*.55);ctx2.stroke();
+  ctx2.beginPath();ctx2.moveTo(W*.38,H*.26);ctx2.lineTo(W*.6,H*.26);ctx2.stroke();
+  // Rope from ceiling beam
+  ctx2.strokeStyle='rgba(150,120,80,.9)';ctx2.lineWidth=2;ctx2.beginPath();ctx2.moveTo(W*.62,0);ctx2.lineTo(W*.62,H*.18);ctx2.stroke();
+  drawCrosses(W*.8,H*.06,H*.06);
+}
+
+function bgTruck(W,H){
+  var g=ctx2.createLinearGradient(0,0,0,H);g.addColorStop(0,'#050e1f');g.addColorStop(1,'#0a1a38');
+  ctx2.fillStyle=g;ctx2.fillRect(0,0,W,H);
+  // Ground/parking lot
+  ctx2.fillStyle='#1a1a1a';ctx2.fillRect(0,H*.6,W,H);
+  ctx2.strokeStyle='rgba(255,255,0,.3)';ctx2.lineWidth=2;ctx2.setLineDash([W*.06,W*.04]);
+  ctx2.beginPath();ctx2.moveTo(W*.5,H*.6);ctx2.lineTo(W*.5,H);ctx2.stroke();ctx2.setLineDash([]);
+  // Van/truck body
+  ctx2.fillStyle='#1B2A4A';ctx2.beginPath();ctx2.roundRect(W*.02,H*.3,W*.72,H*.35,8);ctx2.fill();
+  ctx2.strokeStyle='#E87722';ctx2.lineWidth=2;ctx2.stroke();
+  // Cab
+  ctx2.fillStyle='#2a3a5a';ctx2.beginPath();ctx2.roundRect(W*.58,H*.22,W*.2,H*.2,4);ctx2.fill();
+  // Windows
+  ctx2.fillStyle='rgba(150,200,255,.3)';ctx2.beginPath();ctx2.roundRect(W*.6,H*.24,W*.16,H*.12,3);ctx2.fill();
+  // MCCT logo on van — bold orange
+  ctx2.fillStyle='#E87722';ctx2.font='bold '+Math.round(H*.06)+'px Montserrat,sans-serif';ctx2.textAlign='center';
+  ctx2.fillText('Men Can Clean Too!',W*.38,H*.52);ctx2.textAlign='left';
+  // Wheels
+  [[W*.12,H*.62],[W*.42,H*.62],[W*.62,H*.62]].forEach(function(w){
+    ctx2.fillStyle='#333';ctx2.beginPath();ctx2.arc(w[0],w[1],H*.06,0,Math.PI*2);ctx2.fill();
+    ctx2.fillStyle='#666';ctx2.beginPath();ctx2.arc(w[0],w[1],H*.035,0,Math.PI*2);ctx2.fill();
+  });
+  // Open sliding door — rope hangs from top frame
+  ctx2.strokeStyle='#E87722';ctx2.lineWidth=3;
+  ctx2.beginPath();ctx2.moveTo(W*.32,H*.3);ctx2.lineTo(W*.32,H*.64);ctx2.stroke();
+  ctx2.beginPath();ctx2.moveTo(W*.62,H*.3);ctx2.lineTo(W*.62,H*.64);ctx2.stroke();
+  drawCrosses(W*.85,H*.08,H*.06);
+}
+
+// ── THREE CROSSES (always hidden in scene) ──
+function drawCrosses(x,y,size){
+  var s=size;
+  ctx2.strokeStyle='rgba(255,215,0,.25)';ctx2.lineWidth=2;ctx2.lineCap='round';
+  [x-s*.8,x,x+s*.8].forEach(function(cx){
+    ctx2.beginPath();ctx2.moveTo(cx,y);ctx2.lineTo(cx,y+s*.8);ctx2.stroke();
+    ctx2.beginPath();ctx2.moveTo(cx-s*.25,y+s*.22);ctx2.lineTo(cx+s*.25,y+s*.22);ctx2.stroke();
+  });
+}
+
+// ── HIDDEN DETAILS ──
+function drawHiddenDetails(W,H){
+  // Tiny mop emoji watermark bottom right
+  ctx2.globalAlpha=0.08;ctx2.font=Math.round(H*.06)+'px serif';ctx2.textAlign='right';
+  ctx2.fillStyle='#fff';ctx2.fillText('🧹',W-4,H-4);ctx2.textAlign='left';ctx2.globalAlpha=1;
+}
+
+// ── GALLOWS STRUCTURE ──
+function drawGallowsStructure(W,H){
+  ctx2.strokeStyle='rgba(200,150,80,.85)';ctx2.lineWidth=4;ctx2.lineCap='round';
+  // Varies by background — always functional
+  var rx=W*.62,ropey=H*.18;
+  if(currentBg===0){// tree
+    ctx2.strokeStyle='rgba(90,45,12,.7)';ctx2.lineWidth=5;
+    ctx2.beginPath();ctx2.moveTo(W*.55,H*.2);ctx2.quadraticCurveTo(W*.62,H*.15,W*.62,ropey);ctx2.stroke();
+  } else if(currentBg===8){// church — rope already drawn
+    ctx2.strokeStyle='rgba(200,150,80,.6)';ctx2.lineWidth=3;
+    ctx2.beginPath();ctx2.moveTo(rx,0);ctx2.lineTo(rx,ropey);ctx2.stroke();
+  } else {
+    // Generic beam + rope
+    ctx2.strokeStyle='rgba(200,150,80,.5)';ctx2.lineWidth=6;
+    ctx2.beginPath();ctx2.moveTo(W*.2,H*.12);ctx2.lineTo(W*.7,H*.12);ctx2.stroke();
+    ctx2.lineWidth=3;
+    ctx2.beginPath();ctx2.moveTo(rx,H*.12);ctx2.lineTo(rx,ropey);ctx2.stroke();
+  }
+  // Noose
+  ctx2.strokeStyle='rgba(200,150,80,.8)';ctx2.lineWidth=2.5;
+  ctx2.beginPath();ctx2.arc(rx,ropey+6,6,0,Math.PI*2);ctx2.stroke();
+}
+
+// ── BOLD READABLE FIGURE ──
+function drawFigure(W,H){
+  if(wrongCount===0)return;
+  var cx=W*.62,hy=H*.18+12;
+  ctx2.lineCap='round';
+
+  // 1 — HEAD (big, clear circle with face)
+  if(wrongCount>=1){
+    ctx2.strokeStyle='#fff';ctx2.fillStyle='#f5d5a0';ctx2.lineWidth=3;
+    ctx2.beginPath();ctx2.arc(cx,hy+20,18,0,Math.PI*2);ctx2.fill();ctx2.stroke();
+    // Eyes
+    ctx2.fillStyle=wrongCount>=5?'#ff3333':'#1B2A4A';
+    if(wrongCount<5){
+      ctx2.beginPath();ctx2.arc(cx-6,hy+15,3,0,Math.PI*2);ctx2.fill();
+      ctx2.beginPath();ctx2.arc(cx+6,hy+15,3,0,Math.PI*2);ctx2.fill();
+      // Smile → frown
+      ctx2.strokeStyle='#1B2A4A';ctx2.lineWidth=2;ctx2.beginPath();
+      if(wrongCount<=2){ctx2.arc(cx,hy+22,5,0,Math.PI);}
+      else{ctx2.arc(cx,hy+26,5,Math.PI,0);}
+      ctx2.stroke();
+    } else {
+      // X eyes — distressed
+      ctx2.strokeStyle='#ff3333';ctx2.lineWidth=2.5;
+      [[cx-6,hy+12,cx-6+5,hy+12+5],[cx+1,hy+12,cx+1-5,hy+12+5]].forEach(function(l){
+        ctx2.beginPath();ctx2.moveTo(l[0],l[1]);ctx2.lineTo(l[0]+5,l[1]+5);ctx2.stroke();
+        ctx2.beginPath();ctx2.moveTo(l[0]+5,l[1]);ctx2.lineTo(l[0],l[1]+5);ctx2.stroke();
+      });
+      ctx2.beginPath();ctx2.arc(cx,hy+27,5,Math.PI,0);ctx2.stroke();
+    }
+    // Orange apron string (tiny detail)
+    ctx2.strokeStyle='#E87722';ctx2.lineWidth=1.5;
+    ctx2.beginPath();ctx2.moveTo(cx-4,hy+36);ctx2.lineTo(cx+4,hy+36);ctx2.stroke();
+  }
+
+  // 2 — BODY (thick, clearly visible)
+  if(wrongCount>=2){
+    ctx2.strokeStyle='#fff';ctx2.lineWidth=5;
+    ctx2.beginPath();ctx2.moveTo(cx,hy+38);ctx2.lineTo(cx,hy+72);ctx2.stroke();
+    // Orange apron panel
+    ctx2.fillStyle='rgba(232,119,34,.7)';
+    ctx2.fillRect(cx-8,hy+42,16,20);
+  }
+
+  // 3 — LEFT ARM (clearly angled left)
+  if(wrongCount>=3){
+    ctx2.strokeStyle='#fff';ctx2.lineWidth=4;
+    ctx2.beginPath();ctx2.moveTo(cx,hy+48);ctx2.lineTo(cx-22,hy+62);ctx2.stroke();
+  }
+
+  // 4 — RIGHT ARM (clearly angled right)
+  if(wrongCount>=4){
+    ctx2.strokeStyle='#fff';ctx2.lineWidth=4;
+    ctx2.beginPath();ctx2.moveTo(cx,hy+48);ctx2.lineTo(cx+22,hy+62);ctx2.stroke();
+  }
+
+  // 5 — LEFT LEG
+  if(wrongCount>=5){
+    ctx2.strokeStyle='#fff';ctx2.lineWidth=4;
+    ctx2.beginPath();ctx2.moveTo(cx,hy+72);ctx2.lineTo(cx-16,hy+92);ctx2.stroke();
+    // Left shoe
+    ctx2.fillStyle='#333';ctx2.beginPath();ctx2.ellipse(cx-19,hy+94,9,5,0,0,Math.PI*2);ctx2.fill();
+  }
+
+  // 6 — RIGHT LEG
+  if(wrongCount>=6){
+    ctx2.strokeStyle='#ff4444';ctx2.lineWidth=4;
+    ctx2.beginPath();ctx2.moveTo(cx,hy+72);ctx2.lineTo(cx+16,hy+92);ctx2.stroke();
+    // Right shoe
+    ctx2.fillStyle='#333';ctx2.beginPath();ctx2.ellipse(cx+19,hy+94,9,5,0,0,Math.PI*2);ctx2.fill();
+    // Shake
+    canvas.style.animation='shake .5s ease';
+    setTimeout(function(){canvas.style.animation='';},500);
+  }
+}
+
+// ── RANDOM CONSEQUENCE SYSTEM ──
+// 8 consequences, pick 6 randomly per game (one per wrong guess)
+// Each wrong guess = figure part + random consequence
+
+var CONSEQUENCE_NAMES=['bucketTip','mopFall','sprayFire','broomWrong',
+                       'sudsOverflow','lightFlicker','ragDrop','wheelBreak'];
+var activeConsequences=[]; // array of 6 consequence indices for this game
+var consequenceStates={};  // tracks animation state
+
+function shuffleConsequences(){
+  var all=[0,1,2,3,4,5,6,7];
+  for(var i=all.length-1;i>0;i--){var j=Math.floor(MR()*(i+1));var t=all[i];all[i]=all[j];all[j]=t;}
+  activeConsequences=all.slice(0,6);
+  consequenceStates={};
+}
+
+function triggerConsequence(wrongIdx){
+  // wrongIdx is 0-5 (first wrong = 0)
+  var cIdx=activeConsequences[wrongIdx];
+  consequenceStates[wrongIdx]={type:cIdx,frame:0,active:true};
+  animateConsequence(wrongIdx);
+}
+
+function animateConsequence(wrongIdx){
+  var state=consequenceStates[wrongIdx];
+  if(!state||!state.active)return;
+  state.frame++;
+  drawScene(); // full redraw so consequence overlays on top
+
+  var W=canvas.width/2,H=canvas.height/2;
+  drawSingleConsequence(state.type,state.frame,W,H);
+
+  if(state.frame<20){
+    requestAnimationFrame(function(){animateConsequence(wrongIdx);});
+  } else {
+    state.active=false;
+    drawScene();
+  }
+}
+
+function drawConsequences(W,H){
+  // Draw settled (non-animating) consequence states
+  Object.keys(consequenceStates).forEach(function(k){
+    var st=consequenceStates[k];
+    if(!st.active&&st.frame>=20){
+      drawSingleConsequence(st.type,30,W,H); // settled state
+    }
+  });
+}
+
+function drawSingleConsequence(type,frame,W,H){
+  var t=Math.min(frame/20,1); // 0-1 progress
+  ctx2.save();
+  if(type===0) cBucketTip(t,W,H);
+  else if(type===1) cMopFall(t,W,H);
+  else if(type===2) cSprayFire(t,W,H);
+  else if(type===3) cBroomWrong(t,W,H);
+  else if(type===4) cSudsOverflow(t,W,H);
+  else if(type===5) cLightFlicker(t,W,H);
+  else if(type===6) cRagDrop(t,W,H);
+  else cWheelBreak(t,W,H);
+  ctx2.restore();
+}
+
+// Consequence renderers
+function cBucketTip(t,W,H){
+  var bx=W*.08,by=H*.55;
+  ctx2.save();ctx2.translate(bx,by);ctx2.rotate(t*Math.PI*.6);
+  ctx2.fillStyle='#E87722';ctx2.beginPath();ctx2.roundRect(-14,-20,28,24,4);ctx2.fill();
+  ctx2.fillStyle='rgba(80,160,255,.7)';ctx2.beginPath();ctx2.ellipse(-7,-20,10,6,0,0,Math.PI*2);ctx2.fill();
+  ctx2.restore();
+  // Water spilling
+  if(t>0.3){
+    ctx2.fillStyle='rgba(80,160,255,.4)';
+    for(var i=0;i<Math.floor(t*8);i++){
+      ctx2.beginPath();ctx2.arc(bx+i*W*.03,by+H*.05+i*H*.03,3+i,0,Math.PI*2);ctx2.fill();
+    }
+    // Puddle
+    ctx2.fillStyle='rgba(80,160,255,.2)';ctx2.beginPath();
+    ctx2.ellipse(bx+W*.08,by+H*.18,W*.1*t,H*.03,0,0,Math.PI*2);ctx2.fill();
+  }
+}
+
+function cMopFall(t,W,H){
+  var mx=W*.82,my=H*.45;
+  ctx2.save();ctx2.translate(mx,my);ctx2.rotate(-t*Math.PI*.7);
+  ctx2.strokeStyle='#8B6914';ctx2.lineWidth=4;ctx2.lineCap='round';
+  ctx2.beginPath();ctx2.moveTo(0,-H*.2);ctx2.lineTo(0,H*.05);ctx2.stroke();
+  ctx2.fillStyle='#E87722';ctx2.beginPath();ctx2.roundRect(-12,H*.05,24,6,3);ctx2.fill();
+  [[-8,H*.08],[0,H*.1],[8,H*.08]].forEach(function(f){
+    ctx2.strokeStyle='#E87722';ctx2.lineWidth=2;
+    ctx2.beginPath();ctx2.moveTo(f[0],f[1]);ctx2.lineTo(f[0]+(MR()-.5)*8,f[1]+H*.06);ctx2.stroke();
+  });
+  ctx2.restore();
+  if(t>0.8){
+    ctx2.fillStyle='rgba(200,150,80,.3)';ctx2.beginPath();ctx2.ellipse(mx,H*.72,W*.12,H*.02,0,0,Math.PI*2);ctx2.fill();
+  }
+}
+
+function cSprayFire(t,W,H){
+  var sx=W*.85,sy=H*.35;
+  // Bottle
+  ctx2.fillStyle='#1B2A4A';ctx2.beginPath();ctx2.roundRect(sx-6,sy-20,14,28,4);ctx2.fill();
+  ctx2.fillStyle='rgba(255,255,255,.15)';ctx2.fillRect(sx-4,sy-18,4,20);
+  // Tiny MCCT label
+  ctx2.fillStyle='#E87722';ctx2.font='bold '+Math.round(H*.03)+'px Montserrat,sans-serif';ctx2.textAlign='center';
+  ctx2.fillText('MCCT',sx+1,sy);ctx2.textAlign='left';
+  // Spray cloud
+  if(t>0.2){
+    var sprayAmt=Math.floor(t*12);
+    ctx2.fillStyle='rgba(180,220,255,.35)';
+    for(var i=0;i<sprayAmt;i++){
+      var angle=-0.4+i*0.08;
+      var dist=(t-0.2)*W*.25;
+      ctx2.beginPath();ctx2.arc(sx-6+Math.cos(angle)*dist,sy-10+Math.sin(angle)*dist,2+i*.3,0,Math.PI*2);ctx2.fill();
+    }
+  }
+}
+
+function cBroomWrong(t,W,H){
+  var bx=W*.15,by=H*.6;
+  ctx2.save();ctx2.translate(bx,by);ctx2.rotate(Math.sin(t*Math.PI*4)*0.3);
+  ctx2.strokeStyle='#8B6914';ctx2.lineWidth=4;ctx2.lineCap='round';
+  ctx2.beginPath();ctx2.moveTo(0,-H*.25);ctx2.lineTo(0,H*.05);ctx2.stroke();
+  // Brush head
+  ctx2.fillStyle='#c8a020';ctx2.beginPath();ctx2.roundRect(-16,H*.05,32,10,3);ctx2.fill();
+  // Bristles flying wrong way (back toward figure)
+  if(t>0.3){
+    ctx2.strokeStyle='rgba(200,180,80,.6)';ctx2.lineWidth=1.5;
+    for(var i=-12;i<=12;i+=4){
+      ctx2.beginPath();ctx2.moveTo(i,H*.15);
+      ctx2.lineTo(i+t*W*.15,H*.15+H*.04);ctx2.stroke();
+    }
+  }
+  ctx2.restore();
+}
+
+function cSudsOverflow(t,W,H){
+  // Suds bubbling up from bottom
+  var colors=['rgba(200,230,255,.5)','rgba(255,255,255,.4)','rgba(180,210,255,.45)'];
+  for(var i=0;i<Math.floor(t*15);i++){
+    var bx=W*.1+i*W*.05+Math.sin(i)*W*.03;
+    var by=H-(i*H*.04*t)-H*.05;
+    ctx2.fillStyle=colors[i%3];
+    ctx2.beginPath();ctx2.arc(bx,by,3+i*.5,0,Math.PI*2);ctx2.fill();
+  }
+}
+
+function cLightFlicker(t,W,H){
+  if(t<0.15||( t>0.35&&t<0.5)||t>0.7){
+    // Dim state
+    ctx2.fillStyle='rgba(0,0,0,'+(.6*(1-t))+')';ctx2.fillRect(0,0,W,H);
+  }
+}
+
+function cRagDrop(t,W,H){
+  var rx=W*.6+W*.62*.4;
+  var ry=H*.35+t*H*.3;
+  ctx2.save();ctx2.translate(rx,ry);ctx2.rotate(t*Math.PI*.5);
+  ctx2.fillStyle='rgba(200,200,200,.7)';ctx2.beginPath();
+  ctx2.moveTo(-10,-5);ctx2.lineTo(10,-5);ctx2.lineTo(12,5);ctx2.lineTo(-12,5);ctx2.closePath();ctx2.fill();
+  ctx2.restore();
+}
+
+function cWheelBreak(t,W,H){
+  // Mop bucket listing sideways
+  var bx=W*.75,by=H*.55;
+  ctx2.save();ctx2.translate(bx,by);ctx2.rotate(t*Math.PI*.4);
+  ctx2.fillStyle='#E87722';ctx2.beginPath();ctx2.roundRect(-14,-20,28,24,4);ctx2.fill();
+  // Broken wheel
+  ctx2.strokeStyle='#cc3300';ctx2.lineWidth=2;
+  ctx2.beginPath();ctx2.arc(8,6,6,0,Math.PI*2);ctx2.stroke();
+  ctx2.beginPath();ctx2.moveTo(4,2);ctx2.lineTo(12,10);ctx2.stroke();
+  ctx2.restore();
+  // Drips
+  if(t>0.4){
+    ctx2.fillStyle='rgba(80,160,255,.5)';
+    for(var i=0;i<4;i++){
+      ctx2.beginPath();ctx2.arc(bx+i*6,by+H*.08+i*8*t,2,0,Math.PI*2);ctx2.fill();
+    }
+  }
+}
+
+// ══════════════════════════════════════
+// IDENTITY
+// ══════════════════════════════════════
+function getPlayer(){var p=localStorage.getItem('mcct-player');return p?JSON.parse(p):null;}
+function savePlayer(name,email){var id='mcct_'+Math.random().toString(36).substr(2,8);var p={name:name,email:email,id:id,ts:Date.now()};localStorage.setItem('mcct-player',JSON.stringify(p));return p;}
+function fmtTimestamp(){var d=new Date(),mo=d.getMonth()+1,dy=d.getDate(),yr=String(d.getFullYear()).slice(2),hr=d.getHours(),mn=d.getMinutes(),ampm=hr>=12?'PM':'AM';hr=hr%12||12;return mo+'/'+dy+'/'+yr+' '+hr+':'+(mn<10?'0':'')+mn+' '+ampm;}
+
+function showIdentityModal(onComplete){
+var ex=document.getElementById('identModal');if(ex)ex.remove();
+var ov=document.createElement('div');ov.id='identModal';
+ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+var box=document.createElement('div');
+box.style.cssText='background:#1B2A4A;border:2px solid #E87722;border-radius:18px;padding:26px 22px;max-width:320px;width:100%;text-align:center;';
+box.innerHTML='<div style="font-size:36px;margin-bottom:10px;">🧹</div>'
++'<div style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:900;color:#fff;margin-bottom:8px;">One quick thing.</div>'
++'<div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.65;margin-bottom:20px;">To receive your winnings, track your score and beat your friends, we need your first name, last initial and email. You\'ll never be asked again.</div>';
+var nameIn=document.createElement('input');
+nameIn.type='text';nameIn.placeholder='First name + last initial (e.g. Scar R)';nameIn.maxLength=30;
+nameIn.style.cssText='width:100%;background:rgba(255,255,255,.08);border:1.5px solid rgba(232,119,34,.4);border-radius:10px;padding:12px 14px;font-size:15px;color:#fff;font-family:Montserrat,sans-serif;text-align:center;outline:none;margin-bottom:10px;display:block;';
+var emailIn=document.createElement('input');
+emailIn.type='email';emailIn.placeholder='Email address';emailIn.maxLength=80;
+emailIn.style.cssText='width:100%;background:rgba(255,255,255,.08);border:1.5px solid rgba(232,119,34,.4);border-radius:10px;padding:12px 14px;font-size:15px;color:#fff;font-family:Montserrat,sans-serif;text-align:center;outline:none;margin-bottom:14px;display:block;';
+var errDiv=document.createElement('div');errDiv.style.cssText='font-size:12px;color:#ff6644;margin-bottom:8px;display:none;';
+var btn=document.createElement('button');
+btn.style.cssText='width:100%;background:#E87722;color:#fff;font-family:Montserrat,sans-serif;font-weight:900;font-size:14px;padding:14px;border-radius:10px;border:none;cursor:pointer;';
+btn.textContent="Let\'s Play \u2192";
+btn.onclick=function(){
+var nm=nameIn.value.trim(),em=emailIn.value.trim();
+if(!nm||nm.length<2){errDiv.textContent='Enter your first name and last initial.';errDiv.style.display='block';return;}
+if(!em||!em.includes('@')){errDiv.textContent='Enter a valid email address.';errDiv.style.display='block';return;}
+var p=savePlayer(nm,em);ov.remove();onComplete(p);};
+nameIn.addEventListener('keydown',function(e){if(e.key==='Enter')emailIn.focus();});
+emailIn.addEventListener('keydown',function(e){if(e.key==='Enter')btn.click();});
+box.appendChild(nameIn);box.appendChild(emailIn);box.appendChild(errDiv);box.appendChild(btn);
+ov.appendChild(box);document.body.appendChild(ov);
+setTimeout(function(){nameIn.focus();},150);
+}
+
+// ── LOGGING ──
+function logWinner(tier,prize,wrongs,sharedVal){
+var p=getPlayer()||{name:'Anonymous',email:'',id:'',phone:''};
+fetch(SHEETDB_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({data:[{name:p.name,email:p.email,player_id:p.id,
+game:'Spell It Out',score:wrongs+' wrong',tier:'Tier '+tier,prize:prize,
+shared:sharedVal||'No',timestamp:fmtTimestamp(),phone:''}]})
+}).catch(function(){});
+}
+
+// ── KEYBOARD ──
+var KB=[['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['Z','X','C','V','B','N','M']];
+function buildKeyboard(){
+var kb=document.getElementById('keyboard');kb.innerHTML='';
+KB.forEach(function(row){
+var r=document.createElement('div');r.className='kb-row';
+row.forEach(function(letter){
+var k=document.createElement('button');k.className='kb-key';k.id='key-'+letter;k.textContent=letter;
+k.onclick=function(){guess(letter);};r.appendChild(k);});
+kb.appendChild(r);});
+}
+
+function buildWordDisplay(){
+var el=document.getElementById('wordDisplay');el.innerHTML='';
+currentWord.word.split('').forEach(function(ch,i){
+var box=document.createElement('div');box.className='letter-box';
+var char=document.createElement('div');char.className='letter-char';char.id='lc-'+i;
+char.textContent=guessed.indexOf(ch)>-1?ch:'';
+var line=document.createElement('div');line.className='letter-line';
+box.appendChild(char);box.appendChild(line);el.appendChild(box);});
+}
+
+function updateWordDisplay(letter){
+currentWord.word.split('').forEach(function(ch,i){
+if(ch===letter){var el=document.getElementById('lc-'+i);if(el){el.textContent=letter;el.classList.add('reveal');}}
+});
+}
+
+function buildWrongDisplay(){
+var el=document.getElementById('wrongDisplay');el.innerHTML='';
+var wrongLetters=guessed.filter(function(g){return currentWord.word.indexOf(g)===-1;});
+for(var i=0;i<6;i++){
+var b=document.createElement('div');b.className='wrong-bubble '+(i<wrongLetters.length?'used':'empty');
+b.textContent=i<wrongLetters.length?wrongLetters[i]:'\xb7';el.appendChild(b);}
+}
+
+function updateClue(){
+var el=document.getElementById('clueBox');
+if(wrongCount>=3){el.textContent='\ud83d\udca1 '+currentWord.clue.split('.')[0]+'.';el.style.display='block';}
+}
+
+function buildStartLadder(){
+var el=document.getElementById('startLadder');
+el.innerHTML=TIERS.map(function(t){
+var won=highestTier>=t.tier;
+var label=t.maxWrong===0?'0 wrong':'≤'+t.maxWrong+' wrong';
+return '<div class="tier-row'+(won?' won':'')+'"><div class="tr-miss">'+label+'</div><div class="tr-prize">'+t.emoji+' '+t.prize+(t.gp?' 🎟':'')+'</div><div class="tr-lock">'+(won?'✅':'🔒')+'</div></div>';
+}).join('');
+}
+
+// ── GAME FLOW ──
+function startGame(){
+var player=getPlayer();
+if(!player){showIdentityModal(function(){beginGame();});return;}
+beginGame();
+}
+
+function beginGame(){
+state='playing';
+// Pick background randomly
+currentBg=Math.floor(MR()*10);
+// Shuffle consequences
+shuffleConsequences();
+var available=WORDS.filter(function(w){return usedWords.indexOf(w.word)===-1;});
+if(available.length===0){usedWords=[];localStorage.setItem('hangman-used','[]');available=WORDS;}
+currentWord=available[Math.floor(MR()*available.length)];
+usedWords.push(currentWord.word);
+if(usedWords.length>10)usedWords=usedWords.slice(-10);
+localStorage.setItem('hangman-used',JSON.stringify(usedWords));
+guessed=[];wrongCount=0;
+showScreen(null);
+resizeGallows();buildKeyboard();buildWordDisplay();buildWrongDisplay();
+document.getElementById('clueBox').style.display='none';
+document.getElementById('headerBadge').textContent='Play to Win';
+// Show first quote
+showQuote();
+initAudio();resumeAudioContext();startMusic();
+}
+
+function guess(letter){
+if(state!=='playing')return;
+if(guessed.indexOf(letter)>-1)return;
+guessed.push(letter);
+// New quote on every guess
+showQuote();
+var keyEl=document.getElementById('key-'+letter);
+if(currentWord.word.indexOf(letter)>-1){
+sfxCorrect();if(keyEl)keyEl.classList.add('correct');
+updateWordDisplay(letter);
+var allGuessed=currentWord.word.split('').every(function(ch){return guessed.indexOf(ch)>-1;});
+if(allGuessed)setTimeout(showWin,400);
+}else{
+// Trigger consequence BEFORE incrementing so index matches
+triggerConsequence(wrongCount);
+wrongCount++;
+sfxWrong();if(keyEl)keyEl.classList.add('wrong');
+buildWrongDisplay();drawScene();updateClue();
+if(wrongCount>=6)setTimeout(showLose,500);
+}
+}
+
+function showWin(){
+state='won';stopMusic();sfxWinSound();
+var t=getTierForWrong(wrongCount);
+if(t.tier>highestTier){highestTier=t.tier;localStorage.setItem('hangman-tier',highestTier);}
+document.getElementById('winBurst').textContent=t.tier>=4?'🏆':t.tier>=3?'🎉':'✅';
+document.getElementById('winTierBadge').textContent=t.label+' '+t.emoji;
+document.getElementById('winWord').textContent=currentWord.word;
+document.getElementById('winClue').textContent=currentWord.clue;
+document.getElementById('prizeVal').textContent=t.val;
+document.getElementById('prizeHow').textContent=t.how;
+document.getElementById('prizeCode').textContent=t.code||'';
+document.getElementById('bookBtn').href=t.bookUrl;
+if(t.tier===5){document.getElementById('bookBtn').textContent='Call Us \u2192 (417) 719-1380';}
+else{document.getElementById('bookBtn').innerHTML='Book Now<span style="font-size:10px;font-weight:600;opacity:.75;display:block;margin-top:2px;">2 minutes \xb7 No contract \xb7 Cancel anytime</span>';}
+document.getElementById('headerBadge').textContent=t.label+' '+t.emoji;
+setupShareSection(t);
+logWinner(t.tier,t.prize,wrongCount,'No');
+showScreen('winScreen');spawnWinBurst(t.tier);
+}
+
+function showLose(){
+state='lost';stopMusic();sfxDeath();
+var titles=['So close.','Almost.','Not this time.','Keep trying.'];
+document.getElementById('loseTitle').textContent=titles[Math.floor(MR()*titles.length)];
+document.getElementById('loseWord').textContent=currentWord.word;
+document.getElementById('loseClue').textContent=currentWord.clue;
+showScreen('loseScreen');
+logWinner(0,'No prize',6,'No');
+}
+
+function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});if(id)document.getElementById(id).classList.add('active');}
+
+// ── SHARE ──
+function buildShareText(t){
+var wrongs=wrongCount===0?'zero wrong guesses':wrongCount+' wrong guess'+(wrongCount===1?'':'es');
+var lines=['My cleaning company built real games \ud83d\ude02 @mencancleantoo','Solved it with '+wrongs+' \u2014 '+t.label+' '+t.emoji];
+if(t.gp)lines.push('\ud83c\udfdf I\'m entered for the grand prize drawing');
+lines.push('','Try it \u2014 you can win stuff too:','mencancleantoo.com/win');
+return lines.join('\n');
+}
+
+function buildLoseShareText(){
+return 'Can you beat me? \ud83e\uddf9 @mencancleantoo\nI got '+wrongCount+' wrong on Spell It Out\n\nPlay free \u2014 win real prizes:\nmencancleantoo.com/win';
+}
+
+function setupShareSection(t){
+var shareText=buildShareText(t);
+document.getElementById('sharePreview').textContent=shareText;
+var titleEl=document.getElementById('shareTitle'),subEl=document.getElementById('shareSub');
+var lockEl=document.getElementById('shareLockBox'),unlockEl=document.getElementById('shareUnlockBox');
+var shareBtn=document.getElementById('mainShareBtn');
+if(t.tier>=3){
+titleEl.textContent='Share to unlock your prize code';subEl.textContent='One tap. Your code appears instantly.';
+if(lockEl)lockEl.style.display='block';if(unlockEl)unlockEl.style.display='none';
+document.getElementById('sharePreview').style.display='none';
+shareBtn.textContent='\ud83d\udd13 Share & Unlock Prize Code';shareBtn.style.background='#E87722';shareBtn.disabled=false;
+}else{
+titleEl.textContent='Send this to a friend';subEl.textContent='They can play and win something real too.';
+if(lockEl)lockEl.style.display='none';if(unlockEl)unlockEl.style.display='none';
+document.getElementById('sharePreview').style.display='block';
+shareBtn.textContent='\ud83d\udcf2 Share';shareBtn.style.background='rgba(255,255,255,.1)';shareBtn.disabled=false;
+}
+}
+
+function doMainShare(){
+var t=getTierForWrong(wrongCount);var raw=buildShareText(t);
+fireShare(raw,function(){onWinShareComplete(t);});
+}
+
+function onWinShareComplete(t){
+logWinner(t.tier,t.prize,wrongCount,'Yes');
+if(t.tier>=3){
+var lockEl=document.getElementById('shareLockBox'),unlockEl=document.getElementById('shareUnlockBox');
+var shareBtn=document.getElementById('mainShareBtn');
+if(lockEl)lockEl.style.display='none';
+if(unlockEl){unlockEl.style.display='block';document.getElementById('unlockedPrizeCode').textContent=t.code||'SEE BOOKING NOTES';}
+shareBtn.textContent='\u2713 Shared! Code unlocked.';shareBtn.style.background='#00c864';shareBtn.disabled=true;
+}else{
+var shareBtn=document.getElementById('mainShareBtn');
+shareBtn.textContent='\u2713 Copied!';shareBtn.style.background='#00c864';
+setTimeout(function(){shareBtn.textContent='\ud83d\udcf2 Share';shareBtn.style.background='rgba(255,255,255,.1)';shareBtn.disabled=false;},2500);
+}
+}
+
+function doLoseShare(){
+var raw=buildLoseShareText();var btn=document.getElementById('loseShareBtn');
+fireShare(raw,function(){if(btn){btn.textContent='\u2713 Shared!';btn.style.background='#00c864';}
+setTimeout(function(){if(btn){btn.textContent='\ud83d\udcf2 Challenge a friend to beat your score';btn.style.background='rgba(255,255,255,.08)';}},3000);});
+}
+
+function fireShare(raw,onComplete){
+if(navigator.share){navigator.share({title:'Men Can Clean Too! \u2014 Games',text:raw,url:'https://www.mencancleantoo.com/win'}).then(function(){onComplete();}).catch(function(err){if(err&&err.name!=='AbortError'){showShareModal(raw,onComplete);}});}
+else{showShareModal(raw,onComplete);}
+}
+
+function showShareModal(raw,onComplete){
+var ex=document.getElementById('shareModal');if(ex)ex.remove();
+var ov=document.createElement('div');ov.id='shareModal';
+ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+var box=document.createElement('div');
+box.style.cssText='background:#1B2A4A;border:2px solid #E87722;border-radius:18px;padding:22px;max-width:320px;width:100%;text-align:center;';
+box.innerHTML='<div style="font-family:Montserrat,sans-serif;font-size:14px;font-weight:900;color:#E87722;margin-bottom:10px;">\ud83d\udcf2 Share your score</div>'
++'<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:10px;font-size:11px;color:rgba(255,255,255,.8);line-height:1.6;text-align:left;margin-bottom:12px;font-family:monospace;white-space:pre-wrap;">'+raw+'</div>';
+var copyBtn=document.createElement('button');
+copyBtn.style.cssText='width:100%;background:#E87722;color:#fff;font-family:Montserrat,sans-serif;font-weight:900;font-size:13px;padding:13px;border-radius:10px;border:none;cursor:pointer;margin-bottom:8px;';
+copyBtn.textContent='\ud83d\udccb Copy to clipboard';
+copyBtn.onclick=function(){
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(raw).catch(function(){});}
+else{var ta=document.createElement('textarea');ta.value=raw;ta.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);}
+copyBtn.textContent='\u2713 Copied!';copyBtn.style.background='#00c864';
+setTimeout(function(){
+if(navigator.share){navigator.share({title:'Men Can Clean Too!',text:raw,url:'https://www.mencancleantoo.com/win'}).then(function(){ov.remove();onComplete();}).catch(function(){ov.remove();onComplete();});}
+else{window.open('sms:?body='+encodeURIComponent(raw),'_self');setTimeout(function(){ov.remove();onComplete();},800);}
+},300);};
+var closeBtn=document.createElement('button');
+closeBtn.style.cssText='background:transparent;color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px 20px;font-size:12px;cursor:pointer;';
+closeBtn.textContent='Close';closeBtn.onclick=function(){ov.remove();};
+box.appendChild(copyBtn);box.appendChild(closeBtn);ov.appendChild(box);document.body.appendChild(ov);
+ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+}
+
+// ── PARTICLES ──
+function spawnParticles(x,y,count){var colors=['#E87722','#FFE066','#00c864','#fff'];for(var i=0;i<count;i++){var p=document.createElement('div');p.className='particle';var a=(i/count)*Math.PI*2,d=30+MR()*60,s=4+MR()*6;p.style.cssText='left:'+x+'px;top:'+y+'px;width:'+s+'px;height:'+s+'px;background:'+colors[i%4]+';--tx:'+Math.cos(a)*d+'px;--ty:'+Math.sin(a)*d+'px;--dur:'+(0.4+MR()*.4)+'s;';document.body.appendChild(p);setTimeout(function(el){return function(){el.remove();};}(p),900);}}
+function spawnWinBurst(tier){var count=tier>=4?40:tier>=3?25:15;for(var i=0;i<count;i++){setTimeout(function(){spawnParticles(window.innerWidth/2,window.innerHeight*.3+MR()*80,12);},i*100);}}
+
+// ── KEYBOARD SHORTCUT ──
+document.addEventListener('keydown',function(e){if(state!=='playing')return;var l=e.key.toUpperCase();if(l.length===1&&l>='A'&&l<='Z')guess(l);});
+
+// ── AUDIO ──
+var AudioCtx=window.AudioContext||window.webkitAudioContext;
+var audioCtx=null,musicPlaying=false,musicInterval=null,masterGain=null;
+var soundEnabled=localStorage.getItem('mcct-sound')!=='off';
+function initAudio(){if(audioCtx)return;audioCtx=new AudioCtx();masterGain=audioCtx.createGain();masterGain.gain.value=soundEnabled?1:0;masterGain.connect(audioCtx.destination);}
+function toggleSound(){soundEnabled=!soundEnabled;localStorage.setItem('mcct-sound',soundEnabled?'on':'off');if(masterGain)masterGain.gain.value=soundEnabled?1:0;var b=document.getElementById('soundBtn');if(b)b.textContent=soundEnabled?'🔊':'🔇';}
+function resumeAudioContext(){if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();}
+function playTone(freq,type,startTime,duration,vol,attack,release){if(!audioCtx)return;var osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(masterGain);osc.type=type||'square';osc.frequency.value=freq;var now=startTime||audioCtx.currentTime,att=attack||.005,rel=release||.05,dur=duration||.1,v=vol||.3;gain.gain.setValueAtTime(0,now);gain.gain.linearRampToValueAtTime(v,now+att);gain.gain.setValueAtTime(v,now+dur-rel);gain.gain.linearRampToValueAtTime(0,now+dur);osc.start(now);osc.stop(now+dur+.01);}
+function sfxCorrect(){if(!audioCtx)return;var n=audioCtx.currentTime;playTone(523,'triangle',n,.08,.25,.005,.03);playTone(659,'triangle',n+.08,.08,.2,.005,.03);}
+function sfxWrong(){if(!audioCtx)return;playTone(196,'sawtooth',audioCtx.currentTime,.12,.25,.005,.06);}
+function sfxWinSound(){if(!audioCtx)return;var n=audioCtx.currentTime;[523,659,784,659,784,1047].forEach(function(f,i){playTone(f,'triangle',n+i*.1,.14,.28,.005,.04);});}
+function sfxDeath(){if(!audioCtx)return;var n=audioCtx.currentTime;[330,262,196,147].forEach(function(f,i){playTone(f,'sawtooth',n+i*.09,.12,.28,.005,.06);});}
+
+var HANGMAN_SONG=[[294,2],[294,2],[587,8],[294,2],[294,2],[587,8],[294,4],[330,4],[294,4],[330,4],[294,8],[440,2],[440,2],[880,8],[440,2],[440,2],[880,8],[440,4],[494,4],[440,4],[494,4],[440,8],[587,4],[523,4],[494,4],[440,4],[392,4],[440,4],[494,4],[523,4],[587,4],[523,4],[494,4],[440,4],[392,8],[0,8],[294,4],[330,4],[392,4],[440,4],[494,4],[523,4],[587,4],[659,4],[587,4],[523,4],[494,4],[440,4],[392,8],[294,8],[294,2],[294,2],[587,8],[294,2],[294,2],[587,8],[294,4],[330,4],[294,4],[330,4],[294,8],[392,4],[440,4],[494,4],[523,4],[587,8],[523,4],[494,4],[440,4],[392,4],[330,4],[294,4],[294,8],[0,8]];
+var HANGMAN_BASS=[[147,8],[165,8],[175,8],[196,8],[220,8],[196,8],[175,8],[165,8],[196,8],[220,8],[247,8],[262,8],[294,8],[262,8],[247,8],[196,8]];
+
+function startMusic(){
+if(!audioCtx)return;stopMusic();
+var song=HANGMAN_SONG,bass=HANGMAN_BASS,bpm=148,sixteenth=(60/bpm)/4;
+var noteIdx=0,bassIdx=0;
+function scheduleNext(){
+if(!soundEnabled||!audioCtx||!musicPlaying)return;
+var now=audioCtx.currentTime,note=song[noteIdx%song.length],freq=note[0],dur=note[1]*sixteenth;
+if(freq>0){playTone(freq,'triangle',now,dur*.85,.16,.005,.03);if(freq>300)playTone(freq*1.5,'sine',now,dur*.7,.05,.005,.03);}
+if(noteIdx%6===0){var bn=bass[(bassIdx++)%bass.length];if(bn[0]>0)playTone(bn[0],'triangle',now,bn[1]*sixteenth*.75,.18,.008,.05);}
+noteIdx++;musicInterval=setTimeout(scheduleNext,dur*1000);
+}
+musicPlaying=true;scheduleNext();
+}
+function stopMusic(){musicPlaying=false;if(musicInterval){clearTimeout(musicInterval);clearInterval(musicInterval);musicInterval=null;}}
+
+// Shake animation
+var shakeStyle=document.createElement('style');
+shakeStyle.textContent='@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}';
+document.head.appendChild(shakeStyle);
+
+// ── INIT ──
+buildStartLadder();
+document.getElementById('soundBtn').textContent=soundEnabled?'🔊':'🔇';
+showQuote();
+
+</script>
+</body>
+</html>
