@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Memory Match | Men Can Clean Too!</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800;900&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--orange:#E87722;--navy:#1B2A4A;--gold:#FFE066;--green:#00c864;--light:#F5F5F5;--card:#fff;--border:#F0EBE3;--muted:#888;}
+html,body{height:100%;}
+body{font-family:'Open Sans',sans-serif;background:var(--light);}
+#gameRoot{position:fixed;inset:0;z-index:9000;background:var(--light);display:flex;flex-direction:column;align-items:center;overflow-y:auto;}
+.game-header{width:100%;max-width:520px;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;flex-shrink:0;}
+.back-btn{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:800;letter-spacing:2px;color:var(--navy);text-transform:uppercase;text-decoration:none;border:1.5px solid rgba(27,42,74,0.2);padding:6px 12px;border-radius:20px;cursor:pointer;background:none;}
+.game-title-bar{font-family:'Montserrat',sans-serif;font-size:14px;font-weight:900;color:var(--navy);}
+.prize-badge{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:800;background:var(--orange);color:#fff;padding:4px 10px;border-radius:20px;}
+.hud{width:100%;max-width:520px;display:flex;gap:8px;padding:0 16px 10px;flex-shrink:0;}
+.hud-box{flex:1;background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:8px;text-align:center;}
+.hud-label{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:800;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:2px;}
+.hud-val{font-family:'Montserrat',sans-serif;font-size:20px;font-weight:900;color:var(--navy);line-height:1;}
+.hud-val.orange{color:var(--orange);}
+.hud-val.gold{color:#b08000;}
+.hud-val.danger{color:#c03020;}
+.tier-bar-wrap{width:100%;max-width:520px;padding:0 16px 8px;flex-shrink:0;}
+.tier-bar-bg{background:#e8e8e8;border-radius:20px;height:6px;overflow:hidden;}
+.tier-bar-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--green),var(--orange));transition:width 1s linear;}
+.tier-bar-fill.danger{background:linear-gradient(90deg,#ff4444,#c03020);}
+.tier-markers{display:flex;justify-content:space-between;padding:3px 0 0;}
+.tier-marker{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:800;color:var(--muted);}
+.tier-marker.active{color:var(--orange);}
+#tierToast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--orange);color:#fff;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;padding:8px 18px;border-radius:20px;white-space:nowrap;display:none;z-index:9999;animation:toastIn 0.4s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes toastIn{from{transform:translateX(-50%) scale(0.7);opacity:0;}to{transform:translateX(-50%) scale(1);opacity:1;}}
+.grid-wrap{width:100%;max-width:520px;padding:0 12px;flex:1;}
+.card-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.mem-card{aspect-ratio:1;border-radius:12px;cursor:pointer;position:relative;transform-style:preserve-3d;transition:transform 0.38s cubic-bezier(0.4,0,0.2,1);user-select:none;}
+.mem-card.flipped{transform:rotateY(180deg);}
+.mem-card.matched{transform:rotateY(180deg);cursor:default;}
+.card-face,.card-back{position:absolute;inset:0;border-radius:12px;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;}
+.card-back{background:var(--navy);border:2px solid rgba(255,255,255,0.08);}
+.card-back-logo{font-size:18px;opacity:0.25;}
+.card-face{background:var(--card);border:2px solid var(--border);transform:rotateY(180deg);font-size:30px;box-shadow:0 3px 12px rgba(0,0,0,0.08);}
+.mem-card.matched .card-face{background:#f0fff8;border-color:rgba(0,200,100,0.4);}
+@keyframes matchPop{0%{transform:rotateY(180deg) scale(1);}40%{transform:rotateY(180deg) scale(1.12);}100%{transform:rotateY(180deg) scale(1);}}
+.mem-card.matched{animation:matchPop 0.3s ease;}
+.screen{display:none;flex-direction:column;align-items:center;padding:16px;width:100%;max-width:520px;text-align:center;}
+.screen.active{display:flex;}
+/* START */
+.start-icon{font-size:52px;margin-bottom:8px;animation:float 3s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.start-title{font-family:'Montserrat',sans-serif;font-size:28px;font-weight:900;color:var(--navy);margin-bottom:6px;line-height:1.15;}
+.start-title em{color:var(--orange);font-style:normal;}
+.start-sub{font-size:13px;color:var(--muted);line-height:1.65;max-width:300px;margin-bottom:12px;}
+.tier-ladder{width:100%;max-width:360px;margin-bottom:16px;}
+.tier-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:var(--card);border:1.5px solid var(--border);margin-bottom:5px;}
+.tier-row.won{background:#fff5ec;border-color:rgba(232,119,34,0.3);}
+.tier-time{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:900;color:var(--orange);min-width:55px;text-align:left;}
+.tier-prize{flex:1;font-size:12px;color:var(--navy);font-weight:600;text-align:left;}
+.tier-lock{font-size:13px;}
+.start-btn{background:var(--orange);color:#fff;font-family:'Montserrat',sans-serif;font-weight:900;font-size:14px;letter-spacing:2px;text-transform:uppercase;padding:16px 40px;border-radius:14px;border:none;cursor:pointer;width:100%;max-width:320px;}
+/* WIN */
+.win-burst{font-size:52px;margin-bottom:6px;animation:burst 0.6s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes burst{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}
+.win-big{font-family:'Montserrat',sans-serif;font-size:44px;font-weight:900;color:var(--navy);line-height:1;margin-bottom:4px;}
+.win-tier-badge{font-family:'Montserrat',sans-serif;font-size:11px;font-weight:800;background:var(--orange);color:#fff;padding:4px 12px;border-radius:20px;display:inline-block;margin-bottom:8px;}
+.win-time-line{font-size:13px;color:var(--muted);margin-bottom:6px;}
+.win-time-line strong{color:var(--green);font-weight:800;}
+.win-desc{font-size:13px;color:var(--navy);line-height:1.65;max-width:300px;margin-bottom:14px;}
+.prize-box{background:var(--navy);border:2px solid var(--orange);border-radius:16px;padding:16px 18px;width:100%;max-width:320px;margin-bottom:12px;text-align:center;}
+.prize-box-label{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:800;letter-spacing:3px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:6px;}
+.prize-box-val{font-family:'Montserrat',sans-serif;font-size:18px;font-weight:900;color:var(--gold);margin-bottom:4px;}
+.prize-box-how{font-size:12px;color:rgba(255,255,255,0.55);line-height:1.5;}
+.prize-box-code{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:900;color:var(--orange);margin-top:6px;}
+.book-btn{display:block;width:100%;max-width:320px;background:var(--orange);color:#fff;font-family:'Montserrat',sans-serif;font-weight:900;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;padding:15px;border-radius:12px;text-decoration:none;text-align:center;margin-bottom:6px;}
+.book-btn-sub{font-size:10px;font-weight:600;opacity:0.75;display:block;margin-top:2px;}
+.win-fine{font-size:10px;color:var(--muted);max-width:300px;margin-bottom:14px;}
+.share-section{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:14px;width:100%;max-width:320px;margin-bottom:12px;}
+.share-title{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;color:var(--navy);margin-bottom:3px;}
+.share-sub{font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5;}
+.share-preview{background:var(--light);border-radius:8px;padding:10px;font-size:11px;color:#555;line-height:1.6;margin-bottom:10px;text-align:left;font-family:monospace;white-space:pre-wrap;}
+.share-btns{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
+.share-btn{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:800;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;}
+.sb-fb{background:#1877F2;color:#fff;}.sb-ig{background:linear-gradient(45deg,#f09433,#dc2743,#bc1888);color:#fff;}.sb-tw{background:#000;color:#fff;}.sb-sms{background:var(--green);color:#fff;}.sb-copy{background:#eee;color:var(--navy);}
+.play-again-btn{background:var(--navy);color:#fff;font-family:'Montserrat',sans-serif;font-weight:900;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;padding:14px 32px;border-radius:12px;border:none;cursor:pointer;margin-bottom:6px;}
+/* LOSE */
+.lose-icon{font-size:48px;margin-bottom:8px;}
+.lose-title{font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:var(--navy);margin-bottom:6px;}
+.lose-sub{font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6;max-width:280px;}
+.progress-box{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:14px 18px;width:100%;max-width:320px;margin-bottom:12px;font-size:13px;color:var(--navy);line-height:1.7;}
+.progress-box strong{color:var(--orange);}
+.try-btn{background:var(--orange);color:#fff;font-family:'Montserrat',sans-serif;font-weight:900;font-size:14px;letter-spacing:2px;text-transform:uppercase;padding:16px 40px;border-radius:12px;border:none;cursor:pointer;width:100%;max-width:320px;margin-bottom:10px;}
+
+.sound-btn{position:fixed;top:12px;right:16px;background:rgba(27,42,74,0.1);border:1.5px solid rgba(27,42,74,0.15);border-radius:20px;padding:5px 10px;font-size:14px;cursor:pointer;z-index:9999;font-family:'Montserrat',sans-serif;font-weight:800;}
+.particle{position:fixed;pointer-events:none;z-index:99999;border-radius:50%;animation:pBurst var(--dur,.7s) ease-out forwards;}
+@keyframes pBurst{0%{transform:translate(0,0) scale(1);opacity:1;}100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0;}}
+</style>
+</head>
+<body>
+<div id="gameRoot">
+<button id="soundBtn" class="sound-btn" onclick="toggleSound()">🔊</button>
+<div class="game-header">
+  <button class="back-btn" onclick="window.top.location.href='https://www.mencancleantoo.com/win';">← All Games</button>
+  <div class="game-title-bar">🃏 Memory Match</div>
+  <div class="prize-badge" id="headerBadge">Play to Win</div>
+</div>
+<div class="hud" id="hud" style="display:none;">
+  <div class="hud-box"><div class="hud-label">Time Left</div><div class="hud-val orange" id="timerDisplay">60</div></div>
+  <div class="hud-box"><div class="hud-label">Matched</div><div class="hud-val" id="matchDisplay">0/8</div></div>
+  <div class="hud-box"><div class="hud-label">Tier</div><div class="hud-val orange" id="tierDisplay">—</div></div>
+  <div class="hud-box"><div class="hud-label">Best</div><div class="hud-val gold" id="bestDisplay">--</div></div>
+</div>
+<div class="tier-bar-wrap" id="timerBarWrap" style="display:none;">
+  <div class="tier-bar-bg"><div class="tier-bar-fill" id="timerBar" style="width:100%;"></div></div>
+  <div class="tier-markers">
+    <span class="tier-marker" id="m5">T5&lt;20s</span>
+    <span class="tier-marker" id="m4">T4&lt;30s</span>
+    <span class="tier-marker" id="m3">T3&lt;40s</span>
+    <span class="tier-marker" id="m2">T2&lt;50s</span>
+    <span class="tier-marker" id="m1">T1&lt;60s</span>
+  </div>
+</div>
+<div id="tierToast"></div>
+<div class="grid-wrap" id="gridWrap" style="display:none;"><div id="matchQuote" style="margin:0 0 8px;padding:8px 12px;background:rgba(27,42,74,.5);border-left:3px solid #E87722;border-radius:0 8px 8px 0;font-size:10px;font-style:italic;line-height:1.55;color:rgba(255,255,255,.7);opacity:0;"></div><div class="card-grid" id="cardGrid"></div></div>
+
+<!-- START -->
+<div class="screen active" id="startScreen">
+  <div class="start-icon">🃏</div>
+  <div class="start-title">Memory<br><em>Match</em></div>
+  <p class="start-sub">Flip and match all 8 pairs before time runs out. Faster = bigger prize.</p>
+  <div class="tier-ladder" id="startLadder"></div>
+  <button class="start-btn" onclick="startGame()">Start →</button>
+  <div id="startQuote" style="margin:8px 16px 0;padding:8px 12px;background:rgba(27,42,74,.5);border-left:3px solid #E87722;border-radius:0 8px 8px 0;font-size:10px;font-style:italic;line-height:1.55;color:rgba(255,255,255,.7);opacity:0;"></div>
+</div>
+
+<!-- WIN -->
+<div class="screen" id="winScreen">
+  <div class="win-burst" id="winBurst">🎉</div>
+  <div class="win-big">You got it.</div>
+  <div class="win-tier-badge" id="winTierBadge">Tier 1</div>
+  <div class="win-time-line">All 8 matched in <strong id="winTime">--</strong>s</div>
+  <p class="win-desc" id="winDesc"></p>
+  <div class="prize-box">
+    <div class="prize-box-label">Your Prize</div>
+    <div class="prize-box-val" id="prizeVal"></div>
+    <div class="prize-box-how" id="prizeHow"></div>
+    <div class="prize-box-code" id="prizeCode"></div>
+  </div>
+  <a id="bookBtn" href="#" class="book-btn" target="_blank">
+    Book Now
+    <span class="book-btn-sub">2 minutes · No contract · Cancel anytime</span>
+  </a>
+  <div class="win-fine">New clients only. One per household. Can't be combined with the Free 1 Hour Power Clean.</div>
+  <div class="share-section">
+    <div class="share-title" id="shareTitle">Send this to a friend</div>
+    <div class="share-sub" id="shareSub">They can play and win something real too.</div>
+    <div class="share-preview" id="sharePreview"></div>
+    <div id="shareLockBox" style="display:none;background:rgba(232,119,34,.1);border:1.5px solid rgba(232,119,34,.3);border-radius:12px;padding:14px;margin-bottom:10px;text-align:center;">
+      <div style="font-size:22px;margin-bottom:4px;">🔒</div>
+      <div style="font-family:Montserrat,sans-serif;font-size:12px;font-weight:800;color:#fff;">Share to unlock your prize code</div>
+    </div>
+    <div id="shareUnlockBox" style="display:none;background:rgba(0,200,100,.1);border:1.5px solid rgba(0,200,100,.4);border-radius:12px;padding:12px;margin-bottom:10px;text-align:center;">
+      <div style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:4px;">Your prize code</div>
+      <div style="font-family:Montserrat,sans-serif;font-size:20px;font-weight:900;color:#00c864;" id="unlockedPrizeCode"></div>
+    </div>
+    <button id="mainShareBtn" onclick="doMainShare()" style="width:100%;background:rgba(255,255,255,.1);color:#fff;font-family:Montserrat,sans-serif;font-weight:900;font-size:14px;padding:14px;border-radius:10px;border:none;cursor:pointer;margin-top:4px;">📲 Share</button>
+  </div>
+  <button class="play-again-btn" onclick="startGame()">Play Again</button>
+  <button class="play-again-btn" onclick="window.top.location.href='https://www.mencancleantoo.com/win';" style="background:transparent;color:var(--muted);border:1.5px solid #ddd;margin-top:4px;">← All Games</button>
+</div>
+
+<!-- LOSE -->
+<div class="screen" id="loseScreen">
+  <div class="lose-icon" id="loseIcon">⏰</div>
+  <div class="lose-title" id="loseTitle">Time's up.</div>
+  <p class="lose-sub" id="loseSub"></p>
+  <div class="progress-box" id="progressBox"></div>
+  <div id="loseQuote" style="margin:6px 0 8px;padding:8px 12px;background:rgba(27,42,74,.5);border-left:3px solid #E87722;border-radius:0 8px 8px 0;font-size:10px;font-style:italic;line-height:1.55;color:rgba(255,255,255,.65);"></div>
+  <button class="try-btn" onclick="startGame()">Try Again →</button>
+  <button id="loseShareBtn" onclick="doLoseShare()" style="width:100%;background:rgba(255,255,255,.08);color:#fff;font-family:Montserrat,sans-serif;font-weight:900;font-size:13px;padding:13px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);cursor:pointer;margin-top:6px;margin-bottom:4px;">📲 Challenge a friend to beat your score</button>
+  <button class="play-again-btn" onclick="window.top.location.href='https://www.mencancleantoo.com/win';" style="background:transparent;color:var(--muted);border:1.5px solid #ddd;margin-top:4px;">← All Games</button>
+</div>
+</div>
+
+<script>
+
+
+
+
+var SHEETDB_URL='https://sheetdb.io/api/v1/acbsxaeinq2dj';
+
+// ── 50-QUOTE LIBRARY ──
+var QUOTES=[
+  {q:"Jesus is the way, the truth, and the life.",s:"John 14:6"},
+  {q:"When you light a lamp, you don\u2019t hide it under a bowl.",s:"Luke 8:16 \u2014 Transparency"},
+  {q:"You will know the truth, and the truth will set you free.",s:"John 8:31\u201332 \u2014 Truth"},
+  {q:"Rejoice with those who rejoice; mourn with those who mourn.",s:"Romans 12:14\u201315 \u2014 Empathy"},
+  {q:"People look at the outward appearance, but the Lord looks at the heart.",s:"1 Samuel 16:7 \u2014 Character"},
+  {q:"A man reaps what he sows.",s:"Galatians 6:7\u20138 \u2014 Accountability"},
+  {q:"We never compromise non-negotiables.",s:"MCCT \u2014 Principles"},
+  {q:"We micromanage until there is trust.",s:"MCCT \u2014 Principles"},
+  {q:"What brought us here won\u2019t take us to the next level.",s:"MCCT \u2014 Principles"},
+  {q:"No one has 100% job security \u2014 not even the Founder.",s:"MCCT \u2014 Principles"},
+  {q:"We treat our customers\u2019 money better than our own.",s:"MCCT \u2014 Principles"},
+  {q:"We strive to be radically open-minded but not easily persuaded.",s:"MCCT \u2014 Principles"},
+  {q:"We fight any temptation to lower our expectations or standards.",s:"MCCT \u2014 Principles"},
+  {q:"Mistakes are okay. Not learning from them is not.",s:"MCCT \u2014 Principles"},
+  {q:"Trust = Speed. It\u2019s a currency more valuable than money.",s:"MCCT \u2014 Principles"},
+  {q:"We build a dream team where everyone can speak up.",s:"MCCT \u2014 Principles"},
+  {q:"The better each of us does, the better the company does.",s:"MCCT \u2014 Principles"},
+  {q:"We create positive peer pressure by challenging one another.",s:"MCCT \u2014 Principles"},
+  {q:"We\u2019re not just cleaning homes. We\u2019re building trust.",s:"MCCT \u2014 Principles"},
+  {q:"Excellence isn\u2019t a standard we hit sometimes. It\u2019s who we are.",s:"MCCT \u2014 Principles"},
+  {q:"Speed without integrity is just noise.",s:"MCCT \u2014 Principles"},
+  {q:"We don\u2019t cut corners. We clean them.",s:"MCCT \u2014 Principles"},
+  {q:"Accountability isn\u2019t punishment. It\u2019s how we grow.",s:"MCCT \u2014 Principles"},
+  {q:"Do it right the first time. Every time.",s:"MCCT \u2014 Principles"},
+  {q:"Communication is required. Failure to communicate leads to termination.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"If we can\u2019t trust you, we won\u2019t schedule you.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"Repeated mistakes are not tolerated. Learn, or move on.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"Communicate bad news fast. Silence is worse than the problem.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"Own it. We move quickly past mistakes when full responsibility is taken.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"Be truthful, sincere, and transparent in all actions and intentions.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"Show up. Do the work. Tell the truth.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"No gossip. No excuses. No drama.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"When you invite someone into your home, it\u2019s more than cleaning.",s:"MCCT \u2014 Who We Are"},
+  {q:"These aren\u2019t just words on a wall.",s:"MCCT \u2014 Living It Out"},
+  {q:"Every cleaner we send into your home is held to these standards.",s:"MCCT \u2014 Living It Out"},
+  {q:"If we ever fall short, we want to know. That\u2019s truth-seeking in practice.",s:"MCCT \u2014 Living It Out"},
+  {q:"You\u2019re sharing your kids\u2019 playroom, your bedroom, and your memories.",s:"MCCT \u2014 Who We Are"},
+  {q:"We show up so you can feel safe, respected, and cared for every time.",s:"MCCT \u2014 Who We Are"},
+  {q:"Founded on faith. Built on trust. Serving Springfield since 2020.",s:"MCCT \u2014 Who We Are"},
+  {q:"172 Google reviews. 4.8 stars. That\u2019s not luck. That\u2019s character.",s:"MCCT \u2014 Living It Out"},
+  {q:"We\u2019re not the cheapest. We\u2019re the most consistent.",s:"MCCT \u2014 Who We Are"},
+  {q:"A clean home is a peaceful home. That\u2019s what we\u2019re here for.",s:"MCCT \u2014 Who We Are"},
+  {q:"We hire people who actually care. That\u2019s rarer than it sounds.",s:"MCCT \u2014 Who We Are"},
+  {q:"No contracts. No cancellation fees. Just cleaner spaces.",s:"MCCT \u2014 Who We Are"},
+  {q:"Entitlement, complacency, and gossip have no place here.",s:"MCCT \u2014 Culture"},
+  {q:"Negativity and pessimism are not part of how we operate.",s:"MCCT \u2014 Culture"},
+  {q:"We take care of our health because the work demands it.",s:"MCCT \u2014 Culture"},
+  {q:"Taking advice from the wrong people is how good things fall apart.",s:"MCCT \u2014 Culture"},
+  {q:"Complacency is the enemy of excellence.",s:"MCCT \u2014 Culture"},
+  {q:"A clean reputation takes years to build and seconds to lose.",s:"MCCT \u2014 Culture"},
+];
+
+var _qPool=[];
+function _refillPool(){_qPool=QUOTES.slice().sort(function(){return Math.random()-.5;});}
+function getRandomQuote(){if(_qPool.length===0)_refillPool();return _qPool.pop();}
+
+function showStartQuote(){
+  var q=getRandomQuote();
+  var el=document.getElementById('startQuote');
+  if(!el)return;
+  el.style.opacity='0';
+  setTimeout(function(){
+    el.innerHTML='\u201c'+q.q+'\u201d <span style="opacity:.6;font-style:normal;">\u2014 '+q.s+'</span>';
+    el.style.transition='opacity .4s ease';
+    el.style.opacity='1';
+  },150);
+}
+
+function showMatchQuote(){
+  var q=getRandomQuote();
+  var el=document.getElementById('matchQuote');
+  if(!el)return;
+  el.style.opacity='0';
+  el.style.transform='translateY(6px)';
+  setTimeout(function(){
+    el.innerHTML='\u201c'+q.q+'\u201d <span style="opacity:.6;font-style:normal;">\u2014 '+q.s+'</span>';
+    el.style.transition='opacity .3s ease, transform .3s ease';
+    el.style.opacity='1';
+    el.style.transform='translateY(0)';
+  },100);
+}
+
+function showLoseQuote(){
+  var q=getRandomQuote();
+  var el=document.getElementById('loseQuote');
+  if(!el)return;
+  el.innerHTML='\u201c'+q.q+'\u201d <span style="opacity:.55;font-style:normal;">\u2014 '+q.s+'</span>';
+}
+
+// ── TIERS ──
+var TIERS=[
+  {maxTime:60,tier:1,label:'Tier 1',prize:'Free 1-Hr Clean',   val:'Free 1-Hour Clean',       how:"Add FREEHOUR to your booking notes.",                          code:'FREEHOUR',      bookUrl:'https://mencancleantoo.bookingkoala.com/booknow/home_cleaning?form_id=4',               emoji:'\u2b50',gp:false},
+  {maxTime:50,tier:2,label:'Tier 2',prize:'20% Off',           val:'20% Off Your First Clean', how:"Book online. Enter GAME20 at checkout.",                       code:'GAME20',        bookUrl:'https://mencancleantoo.bookingkoala.com/booknow/home_cleaning?form_id=4&coupon=GAME20', emoji:'\ud83c\udfaf',gp:false},
+  {maxTime:40,tier:3,label:'Tier 3',prize:'Free Appliance Clean',val:'Free Appliance Add-On',  how:"Oven or fridge. Add APPLIANCECLEAN to your booking notes.",    code:'APPLIANCECLEAN',bookUrl:'https://mencancleantoo.bookingkoala.com/booknow/home_cleaning?form_id=4',               emoji:'\u26a1',gp:true},
+  {maxTime:30,tier:4,label:'Tier 4',prize:'$50 Off',           val:'$50 Off Your First Clean', how:"IGOT50 is applied at checkout. Tap below.",                    code:'IGOT50',        bookUrl:'https://mencancleantoo.bookingkoala.com/booknow/home_cleaning?form_id=4&coupon=IGOT50', emoji:'\ud83d\udcb0',gp:true},
+  {maxTime:20,tier:5,label:'Tier 5',prize:'Free Deep Clean',   val:'Free Deep Clean',          how:"Call or text (417) 719-1380.",                                 code:'',              bookUrl:'tel:4177191380',                                                                     emoji:'\ud83d\udc51',gp:true},
+];
+function getTierForTime(s){for(var i=TIERS.length-1;i>=0;i--){if(s<=TIERS[i].maxTime)return TIERS[i];}return TIERS[0];}
+
+// ── STATE ──
+var state='start',matched=0,flipped=[],lockBoard=false;
+var timeElapsed=0,timerInterval=null,currentWinTier=null;
+var best=parseInt(localStorage.getItem('memory-best')||'0');
+var highestTier=parseInt(localStorage.getItem('memory-tier')||'0');
+var EMOJIS=['\ud83e\uddf9','\ud83e\udea3','\ud83e\uddf4','\ud83e\uddb7','\ud83d\udec1','\ud83d\udec0','\ud83e\udea5','\ud83e\uddfae'];
+var MAX_TIME=60;
+
+// ── IDENTITY ──
+function getPlayer(){var p=localStorage.getItem('mcct-player');return p?JSON.parse(p):null;}
+function savePlayer(name,email){var id='mcct_'+Math.random().toString(36).substr(2,8);var p={name:name,email:email,id:id,ts:Date.now()};localStorage.setItem('mcct-player',JSON.stringify(p));return p;}
+function fmtTimestamp(){var d=new Date(),mo=d.getMonth()+1,dy=d.getDate(),yr=String(d.getFullYear()).slice(2),hr=d.getHours(),mn=d.getMinutes(),ampm=hr>=12?'PM':'AM';hr=hr%12||12;return mo+'/'+dy+'/'+yr+' '+hr+':'+(mn<10?'0':'')+mn+' '+ampm;}
+
+function showIdentityModal(onComplete){
+  var ex=document.getElementById('identModal');if(ex)ex.remove();
+  var ov=document.createElement('div');ov.id='identModal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box=document.createElement('div');
+  box.style.cssText='background:#1B2A4A;border:2px solid #E87722;border-radius:18px;padding:26px 22px;max-width:320px;width:100%;text-align:center;';
+  box.innerHTML='<div style="font-size:36px;margin-bottom:10px;">\ud83e\udde9</div>'
+    +'<div style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:900;color:#fff;margin-bottom:8px;">One quick thing.</div>'
+    +'<div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.65;margin-bottom:20px;">To receive your winnings, track your score and beat your friends, we need your first name, last initial and email. You\'ll never be asked again.</div>';
+  var nameIn=document.createElement('input');
+  nameIn.type='text';nameIn.placeholder='First name + last initial (e.g. Scar R)';nameIn.maxLength=30;
+  nameIn.style.cssText='width:100%;background:rgba(255,255,255,.08);border:1.5px solid rgba(232,119,34,.4);border-radius:10px;padding:12px 14px;font-size:15px;color:#fff;font-family:Montserrat,sans-serif;text-align:center;outline:none;margin-bottom:10px;display:block;';
+  var emailIn=document.createElement('input');
+  emailIn.type='email';emailIn.placeholder='Email address';emailIn.maxLength=80;
+  emailIn.style.cssText='width:100%;background:rgba(255,255,255,.08);border:1.5px solid rgba(232,119,34,.4);border-radius:10px;padding:12px 14px;font-size:15px;color:#fff;font-family:Montserrat,sans-serif;text-align:center;outline:none;margin-bottom:14px;display:block;';
+  var errDiv=document.createElement('div');errDiv.style.cssText='font-size:12px;color:#ff6644;margin-bottom:8px;display:none;';
+  var btn=document.createElement('button');
+  btn.style.cssText='width:100%;background:#E87722;color:#fff;font-family:Montserrat,sans-serif;font-weight:900;font-size:14px;padding:14px;border-radius:10px;border:none;cursor:pointer;';
+  btn.textContent="Let\u2019s Play \u2192";
+  btn.onclick=function(){
+    var nm=nameIn.value.trim(),em=emailIn.value.trim();
+    if(!nm||nm.length<2){errDiv.textContent='Enter your first name and last initial.';errDiv.style.display='block';return;}
+    if(!em||!em.includes('@')){errDiv.textContent='Enter a valid email address.';errDiv.style.display='block';return;}
+    var p=savePlayer(nm,em);ov.remove();onComplete(p);
+  };
+  nameIn.addEventListener('keydown',function(e){if(e.key==='Enter')emailIn.focus();});
+  emailIn.addEventListener('keydown',function(e){if(e.key==='Enter')btn.click();});
+  box.appendChild(nameIn);box.appendChild(emailIn);box.appendChild(errDiv);box.appendChild(btn);
+  ov.appendChild(box);document.body.appendChild(ov);
+  setTimeout(function(){nameIn.focus();},150);
+}
+
+// ── LOGGING ──
+function logWinner(tier,prize,secs,sharedVal){
+  var p=getPlayer()||{name:'Anonymous',email:'',id:'',phone:''};
+  fetch(SHEETDB_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({data:[{name:p.name,email:p.email,player_id:p.id,
+      game:'Memory Match',score:secs+'s',tier:'Tier '+tier,prize:prize,
+      shared:sharedVal||'No',timestamp:fmtTimestamp(),phone:''}]})
+  }).catch(function(){});
+}
+
+// ── GRID ──
+function buildStartLadder(){
+  var el=document.getElementById('startLadder');
+  el.innerHTML=TIERS.map(function(t){
+    var won=highestTier>=t.tier;
+    return '<div class="tier-row'+(won?' won':'')+'"><div class="tr-time">'+t.maxTime+'s</div><div class="tr-prize">'+t.emoji+' '+t.prize+(t.gp?' \ud83c\udfdf':'')+'</div><div class="tr-lock">'+(won?'\u2705':'\ud83d\udd12')+'</div></div>';
+  }).join('');
+}
+
+function buildGrid(){
+  var pairs=EMOJIS.concat(EMOJIS);
+  for(var i=pairs.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pairs[i];pairs[i]=pairs[j];pairs[j]=t;}
+  var grid=document.getElementById('grid');grid.innerHTML='';
+  pairs.forEach(function(emoji,idx){
+    var card=document.createElement('div');card.className='card';card.dataset.idx=idx;card.dataset.emoji=emoji;
+    card.innerHTML='<div class="card-inner"><div class="card-front">\ud83e\udde9</div><div class="card-back">'+emoji+'</div></div>';
+    card.addEventListener('click',onCardClick);
+    grid.appendChild(card);
+  });
+}
+
+// ── CARD LOGIC ──
+function onCardClick(){
+  if(lockBoard||this.classList.contains('flipped')||this.classList.contains('matched'))return;
+  this.classList.add('flipped');sfxCardFlip();
+  flipped.push(this);
+  if(flipped.length===2){lockBoard=true;setTimeout(checkMatch,600);}
+}
+
+function checkMatch(){
+  var a=flipped[0],b=flipped[1];
+  if(a.dataset.emoji===b.dataset.emoji){
+    a.classList.add('matched');b.classList.add('matched');
+    sfxMatch();matched++;
+    document.getElementById('matchDisplay').textContent=matched+'/8';
+    showMatchQuote();
+    if(matched===8)setTimeout(showWin,400);
+  }else{
+    sfxNoMatch();
+    a.classList.remove('flipped');b.classList.remove('flipped');
+  }
+  flipped=[];lockBoard=false;
+}
+
+// ── TIMER ──
+function startTimer(){
+  timeElapsed=0;clearInterval(timerInterval);
+  updateTimerUI();
+  timerInterval=setInterval(function(){
+    timeElapsed++;updateTimerUI();
+    if(timeElapsed>=MAX_TIME)showLose();
+  },1000);
+}
+
+function updateTimerUI(){
+  var el=document.getElementById('timerDisplay');
+  var bar=document.getElementById('timerBar');
+  var left=MAX_TIME-timeElapsed;
+  if(el)el.textContent=left+'s';
+  if(bar){bar.style.width=((left/MAX_TIME)*100)+'%';bar.style.background=left<=10?'#cc2200':left<=20?'#E87722':'#00c864';}
+}
+
+// ── GAME FLOW ──
+function startGame(){
+  var player=getPlayer();
+  if(!player){showIdentityModal(function(){beginGame();});return;}
+  beginGame();
+}
+
+function beginGame(){
+  state='playing';matched=0;flipped=[];lockBoard=false;currentWinTier=null;
+  clearInterval(timerInterval);showScreen(null);
+  document.getElementById('hud').style.display='flex';
+  document.getElementById('timerBarWrap').style.display='block';
+  document.getElementById('gridWrap').style.display='block';
+  document.getElementById('matchDisplay').textContent='0/8';
+  document.getElementById('timerDisplay').textContent=MAX_TIME+'s';
+  // Hide match quote at game start, show start quote
+  var mq=document.getElementById('matchQuote');if(mq)mq.style.opacity='0';
+  showStartQuote();
+  buildGrid();startTimer();
+  initAudio();resumeAudioContext();startMusic();
+}
+
+function showWin(){
+  state='won';clearInterval(timerInterval);
+  var secs=timeElapsed,t=getTierForTime(secs);
+  currentWinTier=t;
+  if(!best||secs<best){best=secs;localStorage.setItem('memory-best',best);}
+  if(t.tier>highestTier){highestTier=t.tier;localStorage.setItem('memory-tier',highestTier);}
+  stopMusic();sfxWin();hideGameUI();
+  document.getElementById('winBurst').textContent=t.tier>=4?'\ud83c\udfc6':t.tier>=3?'\ud83c\udf89':'\u2705';
+  document.getElementById('winTierBadge').textContent=t.label+' '+t.emoji;
+  document.getElementById('winTime').textContent=secs;
+  document.getElementById('winDesc').textContent=t.how;
+  document.getElementById('prizeVal').textContent=t.val;
+  document.getElementById('prizeHow').textContent=t.how;
+  document.getElementById('prizeCode').textContent=t.code||'';
+  document.getElementById('bookBtn').href=t.bookUrl;
+  if(t.tier===5){document.getElementById('bookBtn').textContent='Call Us \u2192 (417) 719-1380';}
+  else{document.getElementById('bookBtn').innerHTML='Book Now<span class="book-btn-sub">2 minutes \xb7 No contract \xb7 Cancel anytime</span>';}
+  setupShareSection(t,secs);
+  logWinner(t.tier,t.prize,secs,'No');
+  showScreen('winScreen');spawnWinBurst(t.tier);
+}
+
+function showLose(){
+  state='lost';clearInterval(timerInterval);stopMusic();sfxDeath();hideGameUI();
+  var titles=matched>=6?['Almost.','So close.']:matched>=3?['Getting there.','Not yet.']:['Keep going.','Try again.'];
+  document.getElementById('loseIcon').textContent=matched>=6?'\ud83d\ude24':matched>=3?'\ud83e\udd14':'\u23f0';
+  document.getElementById('loseTitle').textContent=titles[Math.floor(Math.random()*titles.length)];
+  document.getElementById('loseSub').textContent='You matched '+matched+' of 8. Match all 8 in time to unlock a prize.';
+  var nextT=null;
+  for(var i=0;i<TIERS.length;i++){if(TIERS[i].tier>highestTier){nextT=TIERS[i];break;}}
+  document.getElementById('progressBox').innerHTML='Next target: <strong>'+(nextT?nextT.emoji+' '+nextT.prize+' \u2014 under '+nextT.maxTime+'s':'Beat your best time!')+'</strong>';
+  showLoseQuote();
+  logWinner(0,'No prize',timeElapsed,'No');
+  showScreen('loseScreen');
+}
+
+function hideGameUI(){
+  document.getElementById('hud').style.display='none';
+  document.getElementById('timerBarWrap').style.display='none';
+  document.getElementById('gridWrap').style.display='none';
+}
+function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});if(id)document.getElementById(id).classList.add('active');}
+
+// ── SHARE ──
+function buildShareText(secs,t){
+  var lines=['My cleaning company built real games \ud83d\ude02 @mencancleantoo','Matched all 8 in '+secs+'s \u2014 '+t.label+' '+t.emoji];
+  if(t.gp)lines.push('\ud83c\udfdf I\'m entered for the grand prize drawing');
+  lines.push('','Try it \u2014 you can win stuff too:','mencancleantoo.com/win');
+  return lines.join('\n');
+}
+
+function buildLoseShareText(){
+  return 'Can you beat me? \ud83e\udde9 @mencancleantoo\nI matched '+matched+' of 8 on Memory Match\n\nPlay free \u2014 win real prizes:\nmencancleantoo.com/win';
+}
+
+function setupShareSection(t,secs){
+  var shareText=buildShareText(secs,t);
+  document.getElementById('sharePreview').textContent=shareText;
+  var titleEl=document.getElementById('shareTitle'),subEl=document.getElementById('shareSub');
+  var lockEl=document.getElementById('shareLockBox'),unlockEl=document.getElementById('shareUnlockBox');
+  var shareBtn=document.getElementById('mainShareBtn');
+  if(t.tier>=3){
+    titleEl.textContent='Share to unlock your prize code';subEl.textContent='One tap. Your code appears instantly.';
+    if(lockEl)lockEl.style.display='block';if(unlockEl)unlockEl.style.display='none';
+    document.getElementById('sharePreview').style.display='none';
+    shareBtn.textContent='\ud83d\udd13 Share & Unlock Prize Code';shareBtn.style.background='#E87722';shareBtn.disabled=false;
+  }else{
+    titleEl.textContent='Send this to a friend';subEl.textContent='They can play and win something real too.';
+    if(lockEl)lockEl.style.display='none';if(unlockEl)unlockEl.style.display='none';
+    document.getElementById('sharePreview').style.display='block';
+    shareBtn.textContent='\ud83d\udcf2 Share';shareBtn.style.background='rgba(255,255,255,.1)';shareBtn.disabled=false;
+  }
+}
+
+function doMainShare(){
+  var t=currentWinTier||TIERS[0];
+  var secs=timeElapsed;
+  var raw=buildShareText(secs,t);
+  fireShare(raw,function(){onWinShareComplete(t,secs);});
+}
+
+function onWinShareComplete(t,secs){
+  logWinner(t.tier,t.prize,secs,'Yes');
+  if(t.tier>=3){
+    var lockEl=document.getElementById('shareLockBox'),unlockEl=document.getElementById('shareUnlockBox');
+    var shareBtn=document.getElementById('mainShareBtn');
+    if(lockEl)lockEl.style.display='none';
+    if(unlockEl){unlockEl.style.display='block';document.getElementById('unlockedPrizeCode').textContent=t.code||'SEE BOOKING NOTES';}
+    shareBtn.textContent='\u2713 Shared! Code unlocked.';shareBtn.style.background='#00c864';shareBtn.disabled=true;
+  }else{
+    var shareBtn=document.getElementById('mainShareBtn');
+    shareBtn.textContent='\u2713 Copied!';shareBtn.style.background='#00c864';
+    setTimeout(function(){shareBtn.textContent='\ud83d\udcf2 Share';shareBtn.style.background='rgba(255,255,255,.1)';shareBtn.disabled=false;},2500);
+  }
+}
+
+function doLoseShare(){
+  var raw=buildLoseShareText();
+  var btn=document.getElementById('loseShareBtn');
+  fireShare(raw,function(){
+    if(btn){btn.textContent='\u2713 Shared!';btn.style.background='#00c864';}
+    setTimeout(function(){if(btn){btn.textContent='\ud83d\udcf2 Challenge a friend';btn.style.background='rgba(255,255,255,.08)';}},3000);
+  });
+}
+
+function fireShare(raw,onComplete){
+  if(navigator.share){
+    navigator.share({title:'Men Can Clean Too! \u2014 Games',text:raw,url:'https://www.mencancleantoo.com/win'})
+      .then(function(){onComplete();})
+      .catch(function(err){if(err&&err.name!=='AbortError'){showShareModal(raw,onComplete);}});
+  }else{showShareModal(raw,onComplete);}
+}
+
+function showShareModal(raw,onComplete){
+  var ex=document.getElementById('shareModal');if(ex)ex.remove();
+  var ov=document.createElement('div');ov.id='shareModal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box=document.createElement('div');
+  box.style.cssText='background:#1B2A4A;border:2px solid #E87722;border-radius:18px;padding:22px;max-width:320px;width:100%;text-align:center;';
+  box.innerHTML='<div style="font-family:Montserrat,sans-serif;font-size:14px;font-weight:900;color:#E87722;margin-bottom:10px;">\ud83d\udcf2 Share your score</div>'
+    +'<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:10px;font-size:11px;color:rgba(255,255,255,.8);line-height:1.6;text-align:left;margin-bottom:12px;font-family:monospace;white-space:pre-wrap;">'+raw+'</div>';
+  var copyBtn=document.createElement('button');
+  copyBtn.style.cssText='width:100%;background:#E87722;color:#fff;font-family:Montserrat,sans-serif;font-weight:900;font-size:13px;padding:13px;border-radius:10px;border:none;cursor:pointer;margin-bottom:8px;';
+  copyBtn.textContent='\ud83d\udccb Copy to clipboard';
+  copyBtn.onclick=function(){
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(raw).catch(function(){});}
+    else{var ta=document.createElement('textarea');ta.value=raw;ta.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);}
+    copyBtn.textContent='\u2713 Copied!';copyBtn.style.background='#00c864';
+    setTimeout(function(){
+      if(navigator.share){navigator.share({title:'Men Can Clean Too!',text:raw,url:'https://www.mencancleantoo.com/win'}).then(function(){ov.remove();onComplete();}).catch(function(){ov.remove();onComplete();});}
+      else{window.open('sms:?body='+encodeURIComponent(raw),'_self');setTimeout(function(){ov.remove();onComplete();},800);}
+    },300);
+  };
+  var closeBtn=document.createElement('button');
+  closeBtn.style.cssText='background:transparent;color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px 20px;font-size:12px;cursor:pointer;';
+  closeBtn.textContent='Close';closeBtn.onclick=function(){ov.remove();};
+  box.appendChild(copyBtn);box.appendChild(closeBtn);ov.appendChild(box);document.body.appendChild(ov);
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+}
+
+// ── PARTICLES ──
+function spawnParticles(x,y,count){
+  var colors=['#E87722','#FFE066','#00c864','#fff'];
+  for(var i=0;i<count;i++){
+    var p=document.createElement('div');p.className='particle';
+    var a=(i/count)*Math.PI*2,d=30+Math.random()*60,s=4+Math.random()*6;
+    p.style.cssText='left:'+x+'px;top:'+y+'px;width:'+s+'px;height:'+s+'px;background:'+colors[i%4]+';--tx:'+Math.cos(a)*d+'px;--ty:'+Math.sin(a)*d+'px;--dur:'+(0.4+Math.random()*.4)+'s;';
+    document.body.appendChild(p);
+    setTimeout(function(el){return function(){el.remove();};}(p),900);
+  }
+}
+function spawnWinBurst(tier){
+  var count=tier>=4?40:tier>=3?25:15;
+  for(var i=0;i<count;i++){setTimeout(function(){spawnParticles(window.innerWidth/2,window.innerHeight*.35+Math.random()*80,12);},i*100);}
+}
+
+// ── AUDIO ──
+var AudioCtx=window.AudioContext||window.webkitAudioContext;
+var audioCtx=null,musicPlaying=false,musicInterval=null,masterGain=null;
+var soundEnabled=localStorage.getItem('mcct-sound')!=='off';
+function initAudio(){if(audioCtx)return;audioCtx=new AudioCtx();masterGain=audioCtx.createGain();masterGain.gain.value=soundEnabled?1:0;masterGain.connect(audioCtx.destination);}
+function toggleSound(){soundEnabled=!soundEnabled;localStorage.setItem('mcct-sound',soundEnabled?'on':'off');if(masterGain)masterGain.gain.value=soundEnabled?1:0;var b=document.getElementById('soundBtn');if(b)b.textContent=soundEnabled?'\ud83d\udd0a':'\ud83d\udd07';}
+function resumeAudioContext(){if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();}
+function playTone(freq,type,startTime,duration,vol,attack,release){if(!audioCtx)return;var osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(masterGain);osc.type=type||'square';osc.frequency.value=freq;var now=startTime||audioCtx.currentTime,att=attack||.005,rel=release||.05,dur=duration||.1,v=vol||.3;gain.gain.setValueAtTime(0,now);gain.gain.linearRampToValueAtTime(v,now+att);gain.gain.setValueAtTime(v,now+dur-rel);gain.gain.linearRampToValueAtTime(0,now+dur);osc.start(now);osc.stop(now+dur+.01);}
+function sfxCardFlip(){if(!audioCtx)return;playTone(440,'sine',audioCtx.currentTime,.06,.15,.005,.03);}
+function sfxMatch(){if(!audioCtx)return;var n=audioCtx.currentTime;playTone(523,'triangle',n,.08,.25,.005,.03);playTone(659,'triangle',n+.08,.08,.2,.005,.03);}
+function sfxNoMatch(){if(!audioCtx)return;playTone(220,'sawtooth',audioCtx.currentTime,.1,.2,.005,.05);}
+function sfxWin(){if(!audioCtx)return;var n=audioCtx.currentTime;[523,659,784,659,784,1047].forEach(function(f,i){playTone(f,'triangle',n+i*.1,.14,.28,.005,.04);});}
+function sfxDeath(){if(!audioCtx)return;var n=audioCtx.currentTime;[330,262,196,147].forEach(function(f,i){playTone(f,'sawtooth',n+i*.09,.12,.28,.005,.06);});}
+function sfxTierUnlock(){if(!audioCtx)return;var n=audioCtx.currentTime;[523,659,784,1047].forEach(function(f,i){playTone(f,'square',n+i*.1,.12,.35,.005,.04);});}
+
+var MEMORY_SONG=[[262,4],[330,4],[392,4],[330,4],[262,8],[392,4],[330,4],[294,4],[262,8],[0,4],[294,4],[330,4],[392,4],[440,8],[392,4],[330,4],[294,4],[262,8],[0,8]];
+function startMusic(){
+  if(!audioCtx)return;stopMusic();
+  var song=MEMORY_SONG,bpm=120,beat=(60/bpm)/2;
+  var noteIdx=0;
+  function scheduleNext(){
+    if(!soundEnabled||!audioCtx||!musicPlaying)return;
+    var now=audioCtx.currentTime,note=song[noteIdx%song.length],freq=note[0],dur=note[1]*beat;
+    if(freq>0)playTone(freq,'triangle',now,dur*.8,.12,.005,.04);
+    noteIdx++;
+    musicInterval=setTimeout(scheduleNext,dur*1000);
+  }
+  musicPlaying=true;scheduleNext();
+}
+function stopMusic(){musicPlaying=false;if(musicInterval){clearTimeout(musicInterval);musicInterval=null;}}
+
+// ── INIT ──
+buildStartLadder();
+document.getElementById('soundBtn').textContent=soundEnabled?'\ud83d\udd0a':'\ud83d\udd07';
+showStartQuote();
+
+
+
+
+
+</script>
+</body>
+</html>
