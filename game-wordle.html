@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Clean Wordle | Men Can Clean Too!</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--orange:#E87722;--navy:#1B2A4A;--gold:#FFE066;--green:#00c864;--yellow:#c9b458;--gray:#787c7e;--light:#f9f9f9;--card:#fff;--border:#d3d6da;}
+html,body{height:100%;background:var(--light);}
+body{font-family:'Open Sans',sans-serif;}
+#gameRoot{position:fixed;inset:0;z-index:9000;background:var(--light);display:flex;flex-direction:column;align-items:center;}
+
+/* HEADER */
+.game-header{width:100%;max-width:500px;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--card);flex-shrink:0;}
+.back-btn{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:800;letter-spacing:2px;color:var(--navy);text-transform:uppercase;border:1.5px solid rgba(27,42,74,.2);padding:6px 12px;border-radius:20px;cursor:pointer;background:none;}
+.game-title-bar{font-family:'Montserrat',sans-serif;font-size:15px;font-weight:900;color:var(--navy);}
+.header-right{display:flex;align-items:center;gap:8px;}
+.sound-btn{background:none;border:none;font-size:18px;cursor:pointer;padding:4px;}
+.prize-badge{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:800;background:var(--orange);color:#fff;padding:4px 10px;border-radius:20px;}
+
+/* DAILY STRIP */
+.daily-strip{width:100%;max-width:500px;background:var(--navy);color:#fff;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:800;letter-spacing:1px;text-align:center;padding:7px;flex-shrink:0;}
+.daily-strip span{color:var(--gold);}
+
+/* GRID */
+.grid-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:12px 0 4px;}
+.grid{display:flex;flex-direction:column;gap:6px;}
+.grid-row{display:flex;gap:6px;}
+.tile{width:58px;height:58px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-size:26px;font-weight:900;color:var(--navy);border-radius:4px;transition:border-color .1s;text-transform:uppercase;position:relative;}
+.tile.active{border-color:var(--navy);}
+.tile.filled{border-color:var(--navy);animation:pop .1s ease;}
+@keyframes pop{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
+.tile.correct{background:var(--green);border-color:var(--green);color:#fff;animation:flip .5s ease forwards;}
+.tile.present{background:var(--yellow);border-color:var(--yellow);color:#fff;animation:flip .5s ease forwards;}
+.tile.absent{background:var(--gray);border-color:var(--gray);color:#fff;animation:flip .5s ease forwards;}
+@keyframes flip{0%{transform:rotateX(0);}50%{transform:rotateX(-90deg);}100%{transform:rotateX(0);}}</style>
+<style>
+.tile.shake{animation:shake .4s ease;}
+@keyframes shake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-5px);}40%,80%{transform:translateX(5px);}}
+
+/* KEYBOARD */
+.keyboard{width:100%;max-width:500px;padding:4px 8px 10px;flex-shrink:0;}
+.kb-row{display:flex;gap:5px;justify-content:center;margin-bottom:5px;}
+.kb-key{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;height:54px;min-width:36px;padding:0 6px;border-radius:6px;border:none;background:#d3d6da;color:var(--navy);cursor:pointer;flex:1;max-width:42px;transition:background .2s,color .2s;}
+.kb-key.wide{max-width:60px;font-size:10px;}
+.kb-key.correct{background:var(--green);color:#fff;}
+.kb-key.present{background:var(--yellow);color:#fff;}
+.kb-key.absent{background:var(--gray);color:#fff;}
+
+/* TOAST */
+#toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:800;padding:10px 20px;border-radius:10px;display:none;z-index:9999;white-space:nowrap;}
+#toast.show{display:block;animation:toastIn .3s ease;}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-8px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+
+/* SCREENS */
+.screen{position:fixed;inset:0;z-index:9001;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px;overflow-y:auto;text-align:center;}
+.screen.active{display:flex;}
+
+/* START */
+#startScreen{background:linear-gradient(160deg,#0a1628 0%,#1B2A4A 75%,#001a00 100%);justify-content:center;}
+.start-icon{font-size:52px;margin-bottom:8px;animation:float 3s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.start-title{font-family:'Montserrat',sans-serif;font-size:30px;font-weight:900;color:#fff;margin-bottom:6px;line-height:1.1;}
+.start-title em{color:var(--orange);font-style:normal;}
+.start-sub{font-size:13px;color:rgba(255,255,255,.5);line-height:1.65;max-width:280px;margin-bottom:6px;}
+.start-daily{font-family:'Montserrat',sans-serif;font-size:11px;font-weight:800;color:var(--gold);letter-spacing:1px;margin-bottom:16px;}
+.tier-ladder{width:100%;max-width:300px;margin-bottom:18px;}
+.tier-row{display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);margin-bottom:4px;}
+.tier-row.won{background:rgba(232,119,34,.12);border-color:rgba(232,119,34,.3);}
+.tr-att{font-family:'Montserrat',sans-serif;font-weight:900;font-size:12px;color:var(--orange);min-width:64px;text-align:left;}
+.tr-prize{flex:1;font-size:12px;color:rgba(255,255,255,.65);}
+.tr-lock{font-size:13px;}
+.start-btn{background:var(--orange);color:#fff;font-family:'Montserrat',sans-serif;font-weight:900;font-size:14px;letter-spacing:2px;text-transform:uppercase;padding:16px 40px;border-radius:14px;border:none;cursor:pointer;width:100%;max-width:280px;}
+
+/* WIN / LOSE */
+#winScreen,#loseScreen{background:var(--card);padding-top:16px;}
+.result-icon{font-size:52px;margin-bottom:6px;}
+.result-big{font-family:'Montserrat',sans-serif;font-size:36px;font-weight:900;color:var(--navy);margin-bottom:4px;}
+.result-word{font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:var(--orange);letter-spacing:4px;margin-bottom:8px;}
+.result-attempts{font-size:13px;color:var(--gray);margin-bottom:12px;}
+/* emoji grid */
+.emoji-grid{font-family:monospace;font-size:18px;line-height:1.4;background:#f5f5f5;border-radius:10px;padding:12px 16px;margin-bottom:14px;text-align:left;white-space:pre;border:1px solid var(--border);}
+.prize-box{background:var(--navy);border:2px solid var(--orange);border-radius:16px;padding:16px 18px;width:100%;max-width:300px;margin-bottom:12px;}
+.prize-box-label{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:800;letter-spacing:3px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:6px;}
+.prize-box-val{font-family:'Montserrat',sans-serif;font-size:18px;font-weight:900;color:var(--gold);margin-bottom:4px;}
+.prize-box-how{font-size:12px;color:rgba(255,255,255,.55);line-height:1.5;}
+.prize-box-code{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:900;color:var(--orange);margin-top:6px;}
+.book-btn{display:block;width:100%;max-width:300px;background:var(--orange);color:#fff;font-family:'Montserrat',sans-serif;font-weight:900;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;padding:15px;border-radius:12px;text-decoration:none;text-align:center;margin-bottom:6px;}
+.result-fine{font-size:10px;color:var(--gray);max-width:280px;margin-bottom:14px;}
+.share-section{background:#f5f5f5;border:1.5px solid var(--border);border-radius:12px;padding:14px;width:100%;max-width:300px;margin-bottom:12px;}
+.share-title{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;color:var(--navy);margin-bottom:3px;}
+.share-sub{font-size:11px;color:var(--gray);margin-bottom:8px;line-height:1.5;}
+.share-preview{background:var(--card);border-radius:8px;padding:10px;font-size:11px;color:#555;line-height:1.6;margin-bottom:10px;text-align:left;font-family:monospace;white-space:pre-wrap;border:1px solid var(--border);}
+.share-btns{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
+.share-btn{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:800;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;}
+.sb-fb{background:#1877F2;color:#fff;}.sb-ig{background:linear-gradient(45deg,#f09433,#dc2743,#bc1888);color:#fff;}.sb-tw{background:#000;color:#fff;}.sb-sms{background:var(--green);color:#fff;}.sb-copy{background:#ddd;color:var(--navy);}
+.next-word{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;color:var(--navy);margin-bottom:6px;}
+.countdown{font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:var(--orange);margin-bottom:16px;}
+.play-again-btn{background:var(--navy);color:#fff;font-family:'Montserrat',sans-serif;font-weight:900;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;padding:13px 28px;border-radius:12px;border:none;cursor:pointer;margin-bottom:6px;}
+/* lose only */
+.lose-word-label{font-size:13px;color:var(--gray);margin-bottom:4px;}
+.try-tomorrow{font-size:13px;color:var(--gray);line-height:1.65;max-width:260px;margin-bottom:20px;}
+.particle{position:fixed;pointer-events:none;z-index:99999;border-radius:50%;animation:pBurst var(--dur,.7s) ease-out forwards;}
+@keyframes pBurst{0%{transform:translate(0,0) scale(1);opacity:1;}100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0;}}
+</style>
+</head>
+<body>
+<div id="gameRoot">
+<div class="game-header">
+  <button class="back-btn" onclick="window.top.location.href='https://www.mencancleantoo.com/win';">← All Games</button>
+  <div class="game-title-bar">🟩 Clean Wordle</div>
+  <div class="header-right">
+    <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔊</button>
+    <div class="prize-badge" id="headerBadge">Daily</div>
+  </div>
+</div>
+<div class="daily-strip" id="dailyStrip">Today's Word · <span id="dateLabel"></span> · Resets at midnight</div>
+<div class="grid-wrap"><div class="grid" id="grid"></div></div>
+<div id="guessQuote" style="margin:6px 12px 8px;padding:8px 12px;background:rgba(27,42,74,.5);border-left:3px solid #E87722;border-radius:0 8px 8px 0;font-size:10px;font-style:italic;line-height:1.55;color:rgba(255,255,255,.7);opacity:0;"></div>
+<div class="keyboard" id="keyboard"></div>
+<div id="toast"></div>
+
+<!-- START -->
+<div class="screen active" id="startScreen">
+  <div class="start-icon">🟩</div>
+  <div class="start-title">Clean<br><em>Wordle</em></div>
+  <p class="start-sub">Guess the 5-letter word in 6 tries. Green = right spot. Yellow = wrong spot. One word per day.</p>
+  <div class="start-daily" id="startDateLabel"></div>
+  <div class="tier-ladder" id="startLadder"></div>
+  <button class="start-btn" onclick="startGame()">Play Today's Word →</button>
+  <div id="startQuote" style="margin:8px 16px 0;padding:8px 12px;background:rgba(27,42,74,.5);border-left:3px solid #E87722;border-radius:0 8px 8px 0;font-size:10px;font-style:italic;line-height:1.55;color:rgba(255,255,255,.7);opacity:0;"></div>
+</div>
+
+<!-- WIN -->
+<div class="screen" id="winScreen">
+  <div class="result-icon">🎉</div>
+  <div class="result-big">You got it.</div>
+  <div id="winTierBadge" style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:800;background:var(--orange);color:#fff;padding:4px 12px;border-radius:20px;display:inline-block;margin-bottom:8px;"></div>
+  <div class="result-word" id="winWord"></div>
+  <div class="result-attempts" id="winAttempts"></div>
+  <div class="emoji-grid" id="emojiGrid"></div>
+  <div class="prize-box">
+    <div class="prize-box-label">Your Prize</div>
+    <div class="prize-box-val" id="prizeVal"></div>
+    <div class="prize-box-how" id="prizeHow"></div>
+    <div class="prize-box-code" id="prizeCode"></div>
+  </div>
+  <a id="bookBtn" href="#" class="book-btn" target="_blank">Book Now
+    <span style="font-size:10px;font-weight:600;opacity:.75;display:block;margin-top:2px;">2 minutes · No contract · Cancel anytime</span>
+  </a>
+  <div class="result-fine">New clients only. One per household. Can't be combined with the Free 1 Hour Power Clean.</div>
+  <div class="share-section">
+    <div class="share-title" id="shareTitle">Send this to a friend</div>
+    <div class="share-sub" id="shareSub">They get one shot at today's word too.</div>
+    <div class="share-preview" id="sharePreview"></div>
+    <div id="shareLockBox" style="display:none;background:rgba(232,119,34,.1);border:1.5px solid rgba(232,119,34,.3);border-radius:12px;padding:14px;margin-bottom:10px;text-align:center;"><div style="font-size:22px;margin-bottom:4px;">🔒</div><div style="font-family:Montserrat,sans-serif;font-size:12px;font-weight:800;color:#fff;">Share to unlock your prize code</div></div>
+    <div id="shareUnlockBox" style="display:none;background:rgba(0,200,100,.1);border:1.5px solid rgba(0,200,100,.4);border-radius:12px;padding:12px;margin-bottom:10px;text-align:center;"><div style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:4px;">Your prize code</div><div style="font-family:Montserrat,sans-serif;font-size:20px;font-weight:900;color:#00c864;" id="unlockedPrizeCode"></div></div>
+    <button id="mainShareBtn" onclick="doMainShare()" style="width:100%;background:rgba(255,255,255,.1);color:#fff;font-family:Montserrat,sans-serif;font-weight:900;font-size:14px;padding:14px;border-radius:10px;border:none;cursor:pointer;margin-top:4px;">📲 Share</button>
+  </div>
+  <div class="next-word">Next word in:</div>
+  <div class="countdown" id="countdown">00:00:00</div>
+  <div id="loseQuote" style="margin:8px 0;padding:8px 12px;background:rgba(27,42,74,.5);border-left:3px solid #E87722;border-radius:0 8px 8px 0;font-size:10px;font-style:italic;line-height:1.55;color:rgba(255,255,255,.65);"></div>
+  <button id="loseShareBtn" onclick="doLoseShare()" style="width:100%;background:rgba(255,255,255,.08);color:#fff;font-family:Montserrat,sans-serif;font-weight:900;font-size:13px;padding:13px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);cursor:pointer;margin-top:6px;margin-bottom:4px;">📲 Challenge a friend to beat your score</button>
+  <button class="play-again-btn" onclick="window.top.location.href='https://www.mencancleantoo.com/win';">← All Games</button>
+</div>
+
+<!-- LOSE -->
+<div class="screen" id="loseScreen">
+  <div class="result-icon">😔</div>
+  <div class="result-big">Not today.</div>
+  <div class="lose-word-label">The word was:</div>
+  <div class="result-word" id="loseWord"></div>
+  <div class="emoji-grid" id="loseEmojiGrid"></div>
+  <p class="try-tomorrow">Come back tomorrow for a new word and another shot at a prize.</p>
+  <div class="next-word">Next word in:</div>
+  <div class="countdown" id="loseCountdown">00:00:00</div>
+  <div id="loseQuote" style="margin:8px 0;padding:8px 12px;background:rgba(27,42,74,.5);border-left:3px solid #E87722;border-radius:0 8px 8px 0;font-size:10px;font-style:italic;line-height:1.55;color:rgba(255,255,255,.65);"></div>
+  <button id="loseShareBtn" onclick="doLoseShare()" style="width:100%;background:rgba(255,255,255,.08);color:#fff;font-family:Montserrat,sans-serif;font-weight:900;font-size:13px;padding:13px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);cursor:pointer;margin-top:6px;margin-bottom:4px;">📲 Challenge a friend to beat your score</button>
+  <button class="play-again-btn" onclick="window.top.location.href='https://www.mencancleantoo.com/win';">← All Games</button>
+</div>
+</div>
+
+<script>
+var QUOTES = [
+  // ── SCRIPTURE (6) ──
+  {q:"Jesus is the way, the truth, and the life.",s:"John 14:6"},
+  {q:"When you light a lamp, you don\u2019t hide it under a bowl.",s:"Luke 8:16 \u2014 Transparency"},
+  {q:"You will know the truth, and the truth will set you free.",s:"John 8:31\u201332 \u2014 Truth"},
+  {q:"Rejoice with those who rejoice; mourn with those who mourn.",s:"Romans 12:14\u201315 \u2014 Empathy"},
+  {q:"People look at the outward appearance, but the Lord looks at the heart.",s:"1 Samuel 16:7 \u2014 Character"},
+  {q:"A man reaps what he sows.",s:"Galatians 6:7\u20138 \u2014 Accountability"},
+  // ── PRINCIPLES (18) ──
+  {q:"We never compromise non-negotiables.",s:"MCCT \u2014 Principles"},
+  {q:"We micromanage until there is trust.",s:"MCCT \u2014 Principles"},
+  {q:"What brought us here won\u2019t take us to the next level.",s:"MCCT \u2014 Principles"},
+  {q:"No one has 100% job security \u2014 not even the Founder.",s:"MCCT \u2014 Principles"},
+  {q:"We treat our customers\u2019 money better than our own.",s:"MCCT \u2014 Principles"},
+  {q:"We strive to be radically open-minded but not easily persuaded.",s:"MCCT \u2014 Principles"},
+  {q:"We fight any temptation to lower our expectations or standards.",s:"MCCT \u2014 Principles"},
+  {q:"Mistakes are okay. Not learning from them is not.",s:"MCCT \u2014 Principles"},
+  {q:"Trust = Speed. It\u2019s a currency more valuable than money.",s:"MCCT \u2014 Principles"},
+  {q:"We build a dream team where everyone can speak up.",s:"MCCT \u2014 Principles"},
+  {q:"The better each of us does, the better the company does.",s:"MCCT \u2014 Principles"},
+  {q:"We create positive peer pressure by challenging one another.",s:"MCCT \u2014 Principles"},
+  {q:"We\u2019re not just cleaning homes. We\u2019re building trust.",s:"MCCT \u2014 Principles"},
+  {q:"Excellence isn\u2019t a standard we hit sometimes. It\u2019s who we are.",s:"MCCT \u2014 Principles"},
+  {q:"Speed without integrity is just noise.",s:"MCCT \u2014 Principles"},
+  {q:"We don\u2019t cut corners. We clean them.",s:"MCCT \u2014 Principles"},
+  {q:"Accountability isn\u2019t punishment. It\u2019s how we grow.",s:"MCCT \u2014 Principles"},
+  {q:"Do it right the first time. Every time.",s:"MCCT \u2014 Principles"},
+  // ── NON-NEGOTIABLES (8) ──
+  {q:"Communication is required. Failure to communicate leads to termination.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"If we can\u2019t trust you, we won\u2019t schedule you.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"Repeated mistakes are not tolerated. Learn, or move on.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"Communicate bad news fast. Silence is worse than the problem.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"Own it. We move quickly past mistakes when full responsibility is taken.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"Be truthful, sincere, and transparent in all actions and intentions.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"Show up. Do the work. Tell the truth.",s:"MCCT \u2014 Non-Negotiables"},
+  {q:"No gossip. No excuses. No drama.",s:"MCCT \u2014 Non-Negotiables"},
+  // ── IDENTITY (12) ──
+  {q:"When you invite someone into your home, it\u2019s more than cleaning.",s:"MCCT \u2014 Who We Are"},
+  {q:"These aren\u2019t just words on a wall.",s:"MCCT \u2014 Living It Out"},
+  {q:"Every cleaner we send into your home is held to these standards.",s:"MCCT \u2014 Living It Out"},
+  {q:"If we ever fall short, we want to know. That\u2019s truth-seeking in practice.",s:"MCCT \u2014 Living It Out"},
+  {q:"You\u2019re sharing your kids\u2019 playroom, your bedroom, and your memories.",s:"MCCT \u2014 Who We Are"},
+  {q:"We show up so you can feel safe, respected, and cared for every time.",s:"MCCT \u2014 Who We Are"},
+  {q:"Founded on faith. Built on trust. Serving Springfield since 2020.",s:"MCCT \u2014 Who We Are"},
+  {q:"172 Google reviews. 4.8 stars. That\u2019s not luck. That\u2019s character.",s:"MCCT \u2014 Living It Out"},
+  {q:"We\u2019re not the cheapest. We\u2019re the most consistent.",s:"MCCT \u2014 Who We Are"},
+  {q:"A clean home is a peaceful home. That\u2019s what we\u2019re here for.",s:"MCCT \u2014 Who We Are"},
+  {q:"We hire people who actually care. That\u2019s rarer than it sounds.",s:"MCCT \u2014 Who We Are"},
+  {q:"No contracts. No cancellation fees. Just cleaner spaces.",s:"MCCT \u2014 Who We Are"},
+  // ── CULTURE (6) ──
+  {q:"Entitlement, complacency, and gossip have no place here.",s:"MCCT \u2014 Culture"},
+  {q:"Negativity and pessimism are not part of how we operate.",s:"MCCT \u2014 Culture"},
+  {q:"We take care of our health because the work demands it.",s:"MCCT \u2014 Culture"},
+  {q:"Taking advice from the wrong people is how good things fall apart.",s:"MCCT \u2014 Culture"},
+  {q:"Complacency is the enemy of excellence.",s:"MCCT \u2014 Culture"},
+  {q:"A clean reputation takes years to build and seconds to lose.",s:"MCCT \u2014 Culture"},
+];
+
+
+// ── QUOTE SYSTEM ──
+var _qPool=[];
+function _refillPool(){_qPool=QUOTES.slice().sort(function(){return Math.random()-.5;});}
+function getRandomQuote(){if(_qPool.length===0)_refillPool();return _qPool.pop();}
+
+function showStartQuote(){
+  var q=getRandomQuote();
+  var el=document.getElementById('startQuote');
+  if(!el)return;
+  el.style.opacity='0';
+  setTimeout(function(){
+    el.innerHTML='“'+q.q+'” <span style="opacity:.6;font-style:normal;">— '+q.s+'</span>';
+    el.style.transition='opacity .4s ease';
+    el.style.opacity='1';
+  },150);
+}
+
+function showGuessQuote(){
+  var q=getRandomQuote();
+  var el=document.getElementById('guessQuote');
+  if(!el)return;
+  el.style.opacity='0';
+  setTimeout(function(){
+    el.innerHTML='“'+q.q+'” <span style="opacity:.55;font-style:normal;">— '+q.s+'</span>';
+    el.style.transition='opacity .3s ease';
+    el.style.opacity='1';
+  },100);
+}
+
+function showLoseQuote(){
+  var q=getRandomQuote();
+  var el=document.getElementById('loseQuote');
+  if(!el)return;
+  el.innerHTML='“'+q.q+'” <span style="opacity:.55;font-style:normal;">— '+q.s+'</span>';
+}
+
+
+// ── IDENTITY ──
+function getPlayer(){var p=localStorage.getItem('mcct-player');return p?JSON.parse(p):null;}
+function savePlayer(name,email){var id='mcct_'+Math.random().toString(36).substr(2,8);var p={name:name,email:email,id:id,ts:Date.now()};localStorage.setItem('mcct-player',JSON.stringify(p));return p;}
+function fmtTimestamp(){var d=new Date(),mo=d.getMonth()+1,dy=d.getDate(),yr=String(d.getFullYear()).slice(2),hr=d.getHours(),mn=d.getMinutes(),ampm=hr>=12?'PM':'AM';hr=hr%12||12;return mo+'/'+dy+'/'+yr+' '+hr+':'+(mn<10?'0':'')+mn+' '+ampm;}
+
+function showIdentityModal(onComplete){
+var ex=document.getElementById('identModal');if(ex)ex.remove();
+var ov=document.createElement('div');ov.id='identModal';
+ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+var box=document.createElement('div');
+box.style.cssText='background:#1B2A4A;border:2px solid #E87722;border-radius:18px;padding:26px 22px;max-width:320px;width:100%;text-align:center;';
+box.innerHTML='<div style="font-size:36px;margin-bottom:10px;">🧹</div>'
++'<div style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:900;color:#fff;margin-bottom:8px;">One quick thing.</div>'
++'<div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.65;margin-bottom:20px;">To receive your winnings, track your score and beat your friends, we need your first name, last initial and email. You\'ll never be asked again.</div>';
+var nameIn=document.createElement('input');
+nameIn.type='text';nameIn.placeholder='First name + last initial (e.g. Scar R)';nameIn.maxLength=30;
+nameIn.style.cssText='width:100%;background:rgba(255,255,255,.08);border:1.5px solid rgba(232,119,34,.4);border-radius:10px;padding:12px 14px;font-size:15px;color:#fff;font-family:Montserrat,sans-serif;text-align:center;outline:none;margin-bottom:10px;display:block;';
+var emailIn=document.createElement('input');
+emailIn.type='email';emailIn.placeholder='Email address';emailIn.maxLength=80;
+emailIn.style.cssText='width:100%;background:rgba(255,255,255,.08);border:1.5px solid rgba(232,119,34,.4);border-radius:10px;padding:12px 14px;font-size:15px;color:#fff;font-family:Montserrat,sans-serif;text-align:center;outline:none;margin-bottom:14px;display:block;';
+var errDiv=document.createElement('div');errDiv.style.cssText='font-size:12px;color:#ff6644;margin-bottom:8px;display:none;';
+var btn=document.createElement('button');
+btn.style.cssText='width:100%;background:#E87722;color:#fff;font-family:Montserrat,sans-serif;font-weight:900;font-size:14px;padding:14px;border-radius:10px;border:none;cursor:pointer;';
+btn.textContent="Let's Play →";
+btn.onclick=function(){
+var nm=nameIn.value.trim(),em=emailIn.value.trim();
+if(!nm||nm.length<2){errDiv.textContent='Enter your first name and last initial.';errDiv.style.display='block';return;}
+if(!em||!em.includes('@')){errDiv.textContent='Enter a valid email address.';errDiv.style.display='block';return;}
+var p=savePlayer(nm,em);ov.remove();onComplete(p);};
+nameIn.addEventListener('keydown',function(e){if(e.key==='Enter')emailIn.focus();});
+emailIn.addEventListener('keydown',function(e){if(e.key==='Enter')btn.click();});
+box.appendChild(nameIn);box.appendChild(emailIn);box.appendChild(errDiv);box.appendChild(btn);
+ov.appendChild(box);document.body.appendChild(ov);
+setTimeout(function(){nameIn.focus();},150);
+}
+
+
+var MR=Math.random;
+var SHEETDB_URL='https://sheetdb.io/api/v1/acbsxaeinq2dj';
+var MONTHS_S=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+// ── WORD BANK ──
+var WORDS=['BLOOM','BRAVE','BROOM','BRUSH','BUILD','CLEAN','CLOTH','DRAIN',
+  'FAITH','FLOOR','FRESH','GLOVE','GRACE','GROUT','GROWN','HEART',
+  'HIRED','LEMON','LIGHT','OWNER','PEACE','PROUD','RINSE','SCOUR',
+  'SCRUB','SERVE','SHINE','SPEAK','SPEED','SPRAY','STAIN','STEAM',
+  'SWEEP','TEAMS','TOWEL','TRUST','TRUTH','CRISP','GLEAM','IDEAL'];
+
+// ── TIERS — based on attempts used ──
+var TIERS=[
+  {maxAttempts:6,tier:1,label:'Tier 1',prize:'Free 1-Hr Clean',    val:'Free 1-Hour Clean',       how:"Add FREEHOUR to your booking notes. We'll add a free hour.",      code:'FREEHOUR',      bookUrl:'https://mencancleantoo.bookingkoala.com/booknow/home_cleaning?form_id=4',               emoji:'⭐',gp:false},
+  {maxAttempts:5,tier:2,label:'Tier 2',prize:'20% Off',            val:'20% Off Your First Clean', how:'Book online. Enter GAME20 at checkout.',                          code:'GAME20',        bookUrl:'https://mencancleantoo.bookingkoala.com/booknow/home_cleaning?form_id=4&coupon=GAME20', emoji:'🎯',gp:false},
+  {maxAttempts:4,tier:3,label:'Tier 3',prize:'Free Appliance Add-On',val:'Free Appliance Add-On', how:"Oven or fridge — your choice. Add APPLIANCECLEAN to your notes.",  code:'APPLIANCECLEAN',bookUrl:'https://mencancleantoo.bookingkoala.com/booknow/home_cleaning?form_id=4',               emoji:'⚡',gp:true},
+  {maxAttempts:2,tier:4,label:'Tier 4',prize:'$50 Off',            val:'$50 Off Your First Clean', how:'IGOT50 is applied at checkout. Tap below.',                       code:'IGOT50',        bookUrl:'https://mencancleantoo.bookingkoala.com/booknow/home_cleaning?form_id=4&coupon=IGOT50', emoji:'💰',gp:true},
+];
+
+function getTierForAttempts(a){for(var i=TIERS.length-1;i>=0;i--){if(a<=TIERS[i].maxAttempts)return TIERS[i];}return TIERS[0];}
+
+// ── DAILY WORD (deterministic from date) ──
+function getTodayWord(){
+  var now=new Date();
+  var epoch=new Date(2025,0,1);
+  var dayNum=Math.floor((now-epoch)/(1000*60*60*24));
+  return WORDS[dayNum%WORDS.length];
+}
+
+function getDateLabel(){
+  var d=new Date();
+  return DAYS[d.getDay()]+', '+MONTHS_S[d.getMonth()]+' '+d.getDate();
+}
+
+// ── STATE ──
+var TARGET='';
+var guesses=[];
+var currentGuess='';
+var gameOver=false;
+var highestTier=parseInt(localStorage.getItem('wordle-tier')||'0');
+
+// Check if already played today
+function getTodayKey(){
+  var d=new Date();
+  return 'wordle-'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+}
+
+function getSavedState(){
+  var key=getTodayKey();
+  var saved=localStorage.getItem(key);
+  return saved?JSON.parse(saved):null;
+}
+
+function saveState(result){
+  var key=getTodayKey();
+  localStorage.setItem(key,JSON.stringify({guesses:guesses,result:result}));
+}
+
+// ── BUILD UI ──
+function buildGrid(){
+  var grid=document.getElementById('grid');
+  grid.innerHTML='';
+  for(var r=0;r<6;r++){
+    var row=document.createElement('div');
+    row.className='grid-row';
+    row.id='row-'+r;
+    for(var c=0;c<5;c++){
+      var tile=document.createElement('div');
+      tile.className='tile';
+      tile.id='tile-'+r+'-'+c;
+      row.appendChild(tile);
+    }
+    grid.appendChild(row);
+  }
+}
+
+var KB_ROWS=[['Q','W','E','R','T','Y','U','I','O','P'],
+             ['A','S','D','F','G','H','J','K','L'],
+             ['ENTER','Z','X','C','V','B','N','M','⌫']];
+
+function buildKeyboard(){
+  var kb=document.getElementById('keyboard');
+  kb.innerHTML='';
+  KB_ROWS.forEach(function(row){
+    var r=document.createElement('div');r.className='kb-row';
+    row.forEach(function(k){
+      var btn=document.createElement('button');
+      btn.className='kb-key'+(k.length>1?' wide':'');
+      btn.textContent=k;
+      btn.id='kbkey-'+k;
+      btn.onclick=function(){onKey(k);};
+      r.appendChild(btn);
+    });
+    kb.appendChild(r);
+  });
+}
+
+function buildStartLadder(){
+  var el=document.getElementById('startLadder');
+  el.innerHTML=TIERS.slice().reverse().map(function(t){
+    var won=highestTier>=t.tier;
+    var label=t.maxAttempts===1?'1 try':'≤'+t.maxAttempts+' tries';
+    return '<div class="tier-row'+(won?' won':'')+'"><div class="tr-att">'+label+'</div><div class="tr-prize">'+t.emoji+' '+t.prize+(t.gp?' 🎟':'')+'</div><div class="tr-lock">'+(won?'✅':'🔒')+'</div></div>';
+  }).join('');
+}
+
+// ── GAME ──
+function startGame(){
+  var player=getPlayer();if(!player){showIdentityModal(function(){doStartGame();});return;}doStartGame();}
+function doStartGame(){
+  showStartQuote();
+  TARGET=getTodayWord();
+  guesses=[];currentGuess='';gameOver=false;
+  buildGrid();buildKeyboard();
+  document.getElementById('dateLabel').textContent=getDateLabel();
+  document.getElementById('startDateLabel').textContent='Today — '+getDateLabel();
+
+  // Check if already played today
+  var saved=getSavedState();
+  if(saved){
+    // Replay the saved state
+    guesses=saved.guesses;
+    guesses.forEach(function(g,i){renderGuessRow(i,g,true);});
+    updateKeyboard();
+    gameOver=true;
+    if(saved.result==='win') showWin(false);
+    else showLose(false);
+    return;
+  }
+  showScreen(null);
+  initAudio();resumeAudioContext();startMusic();
+}
+
+function onKey(key){
+  if(gameOver)return;
+  if(key==='⌫'||key==='BACKSPACE'){
+    if(currentGuess.length>0){currentGuess=currentGuess.slice(0,-1);renderCurrentRow();}
+    return;
+  }
+  if(key==='ENTER'){submitGuess();return;}
+  if(key.length===1&&key>='A'&&key<='Z'&&currentGuess.length<5){
+    currentGuess+=key;renderCurrentRow();
+    sfxKey();
+  }
+}
+
+function renderCurrentRow(){
+  var row=guesses.length;
+  for(var c=0;c<5;c++){
+    var tile=document.getElementById('tile-'+row+'-'+c);
+    var ch=currentGuess[c]||'';
+    tile.textContent=ch;
+    tile.className='tile'+(ch?' filled':'')+(c===currentGuess.length-1&&ch?' active':'');
+  }
+}
+
+function submitGuess(){
+  showGuessQuote();
+  if(currentGuess.length<5){shakeRow(guesses.length);showToast('Not enough letters');return;}
+  var g=currentGuess;
+  guesses.push(g);
+  renderGuessRow(guesses.length-1,g,false);
+  currentGuess='';
+  setTimeout(function(){
+    updateKeyboard();
+    if(g===TARGET){gameOver=true;saveState('win');setTimeout(function(){stopMusic();sfxWinSound();showWin(true);},400);}
+    else if(guesses.length>=6){gameOver=true;saveState('lose');setTimeout(function(){stopMusic();sfxDeath();showLose(true);},400);}
+  },350*5+100);
+}
+
+function renderGuessRow(rowIdx,guess,instant){
+  var result=scoreGuess(guess);
+  for(var c=0;c<5;c++){
+    (function(col,ch,cls){
+      var tile=document.getElementById('tile-'+rowIdx+'-'+col);
+      tile.textContent=ch;
+      if(instant){tile.className='tile '+cls;}
+      else{
+        setTimeout(function(){
+          tile.className='tile '+cls;
+          tile.style.animationDelay='0s';
+          if(cls==='correct')sfxCorrect();
+          else if(cls==='present')sfxPresent();
+          else sfxAbsent();
+        },col*350);
+      }
+    })(c,guess[c],result[c]);
+  }
+}
+
+function scoreGuess(guess){
+  var result=['absent','absent','absent','absent','absent'];
+  var targetLeft=TARGET.split('');
+  // First pass — correct
+  for(var i=0;i<5;i++){
+    if(guess[i]===TARGET[i]){result[i]='correct';targetLeft[i]=null;}
+  }
+  // Second pass — present
+  for(var i=0;i<5;i++){
+    if(result[i]==='correct')continue;
+    var idx=targetLeft.indexOf(guess[i]);
+    if(idx>-1){result[i]='present';targetLeft[idx]=null;}
+  }
+  return result;
+}
+
+function updateKeyboard(){
+  var letterState={};
+  guesses.forEach(function(g){
+    var result=scoreGuess(g);
+    g.split('').forEach(function(ch,i){
+      var cur=letterState[ch];
+      var next=result[i];
+      if(cur==='correct')return;
+      if(cur==='present'&&next!=='correct')return;
+      letterState[ch]=next;
+    });
+  });
+  Object.keys(letterState).forEach(function(ch){
+    var btn=document.getElementById('kbkey-'+ch);
+    if(btn){btn.className='kb-key '+letterState[ch];}
+  });
+}
+
+function shakeRow(row){
+  var r=document.getElementById('row-'+row);
+  r.querySelectorAll('.tile').forEach(function(t){t.classList.add('shake');setTimeout(function(){t.classList.remove('shake');},400);});
+}
+
+// ── EMOJI GRID ──
+function buildEmojiGrid(){
+  var map={correct:'🟩',present:'🟨',absent:'⬜'};
+  return guesses.map(function(g){
+    return scoreGuess(g).map(function(r){return map[r];}).join('');
+  }).join('\n');
+}
+
+// ── WIN / LOSE ──
+function showWin(fresh){
+  var attempts=guesses.length;
+  var t=getTierForAttempts(attempts);
+  if(t.tier>highestTier){highestTier=t.tier;localStorage.setItem('wordle-tier',highestTier);}
+
+  document.getElementById('winTierBadge').textContent=t.label+' '+t.emoji;
+  document.getElementById('winWord').textContent=TARGET;
+  document.getElementById('winAttempts').textContent='Solved in '+attempts+' attempt'+(attempts===1?'':'s');
+  document.getElementById('emojiGrid').textContent=buildEmojiGrid();
+  document.getElementById('prizeVal').textContent=t.val;
+  document.getElementById('prizeHow').textContent=t.how;
+  document.getElementById('prizeCode').textContent=t.code?t.code:'';
+  document.getElementById('bookBtn').href=t.bookUrl;
+  document.getElementById('headerBadge').textContent=t.label+' '+t.emoji;
+
+  setupShareSection(t,attempts);
+  showScreen('winScreen');
+  startCountdown('countdown');
+  if(fresh){spawnWinBurst(t.tier);logWinner(t.tier,t.prize,attempts,'No');}
+}
+
+function showLose(fresh){
+  showLoseQuote();
+  document.getElementById('loseWord').textContent=TARGET;
+  document.getElementById('loseEmojiGrid').textContent=buildEmojiGrid();
+  showScreen('loseScreen');
+  startCountdown('loseCountdown');
+}
+
+// ── COUNTDOWN to midnight ──
+function startCountdown(elId){
+  function tick(){
+    var now=new Date(),midnight=new Date();
+    midnight.setHours(24,0,0,0);
+    var diff=midnight-now;
+    var h=Math.floor(diff/3600000);
+    var m=Math.floor((diff%3600000)/60000);
+    var s=Math.floor((diff%60000)/1000);
+    var str=(h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+    var el=document.getElementById(elId);
+    if(el)el.textContent=str;
+  }
+  tick();setInterval(tick,1000);
+}
+
+// ── SHARE ──
+function buildShareText(t,attempts){
+  var month=MONTHS_S[new Date().getMonth()];
+  var lines=[
+    'My cleaning company built a Wordle 😂',
+    'Clean Wordle — '+getDateLabel(),
+    buildEmojiGrid(),
+    '',
+    'I got it in '+attempts+(attempts===1?' try':' tries')+' — '+t.label+' '+t.emoji,
+    (t.gp?"🎟 I'm entered for the grand prize":''),
+    '',
+    'Try today\'s word:',
+    'mencancleantoo.com/win'
+  ];
+  return lines.filter(function(l){return l!==null;}).join('\n');
+}
+
+function showToast(msg,dur){
+  var el=document.getElementById('toast');
+  el.textContent=msg;el.className='show';
+  clearTimeout(el._t);
+  el._t=setTimeout(function(){el.className='';},dur||1800);
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  if(id)document.getElementById(id).classList.add('active');
+}
+
+
+
+
+
+
+function logWinner(tier,prize,attempts,sharedVal){
+var p=getPlayer()||{name:'Anonymous',email:'',id:'',phone:''};
+fetch(SHEETDB_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({data:[{name:p.name,email:p.email,player_id:p.id,
+game:'Clean Wordle',score:attempts+' attempts',tier:'Tier '+tier,prize:prize,
+shared:sharedVal||'No',timestamp:fmtTimestamp(),phone:''}]})
+}).catch(function(){});
+}
+// ── LEADERBOARD ──
+
+
+
+function buildLoseShareText(){
+  return "Today's Clean Wordle got me 🧹 @mencancleantoo\nThe word was: "+TARGET+"\n\nTry tomorrow — win real prizes:\nmencancleantoo.com/win";
+}
+
+function setupShareSection(t,attempts){
+  var shareText=buildShareText(t,attempts);
+  document.getElementById('sharePreview').textContent=shareText;
+  var titleEl=document.getElementById('shareTitle'),subEl=document.getElementById('shareSub');
+  var lockEl=document.getElementById('shareLockBox'),unlockEl=document.getElementById('shareUnlockBox');
+  var shareBtn=document.getElementById('mainShareBtn');
+  if(t.tier>=3){
+    titleEl.textContent='Share to unlock your prize code';subEl.textContent='One tap. Your code appears instantly.';
+    if(lockEl)lockEl.style.display='block';if(unlockEl)unlockEl.style.display='none';
+    document.getElementById('sharePreview').style.display='none';
+    shareBtn.textContent='🔓 Share & Unlock Prize Code';shareBtn.style.background='#E87722';shareBtn.disabled=false;
+  }else{
+    titleEl.textContent='Send this to a friend';subEl.textContent="They get one shot at today's word too.";
+    if(lockEl)lockEl.style.display='none';if(unlockEl)unlockEl.style.display='none';
+    document.getElementById('sharePreview').style.display='block';
+    shareBtn.textContent='📲 Share';shareBtn.style.background='rgba(255,255,255,.1)';shareBtn.disabled=false;
+  }
+}
+
+function doMainShare(){
+  var attempts=guesses.length;
+  var t=getTierForAttempts(attempts);
+  var raw=buildShareText(t,attempts);
+  fireShare(raw,function(){onWinShareComplete(t,attempts);});
+}
+
+function onWinShareComplete(t,attempts){
+  logWinner(t.tier,t.prize,attempts,'Yes');
+  if(t.tier>=3){
+    var lockEl=document.getElementById('shareLockBox'),unlockEl=document.getElementById('shareUnlockBox');
+    var shareBtn=document.getElementById('mainShareBtn');
+    if(lockEl)lockEl.style.display='none';
+    if(unlockEl){unlockEl.style.display='block';document.getElementById('unlockedPrizeCode').textContent=t.code||'SEE BOOKING NOTES';}
+    shareBtn.textContent='✓ Shared! Code unlocked.';shareBtn.style.background='#00c864';shareBtn.disabled=true;
+  }else{
+    var shareBtn=document.getElementById('mainShareBtn');
+    shareBtn.textContent='✓ Copied!';shareBtn.style.background='#00c864';
+    setTimeout(function(){shareBtn.textContent='📲 Share';shareBtn.style.background='rgba(255,255,255,.1)';shareBtn.disabled=false;},2500);
+  }
+}
+
+function doLoseShare(){
+  var raw=buildLoseShareText();
+  var btn=document.getElementById('loseShareBtn');
+  fireShare(raw,function(){
+    if(btn){btn.textContent='✓ Shared!';btn.style.background='#00c864';}
+    setTimeout(function(){if(btn){btn.textContent='📲 Challenge a friend';btn.style.background='rgba(255,255,255,.08)';}},3000);
+  });
+}
+
+function fireShare(raw,onComplete){
+  if(navigator.share){navigator.share({title:'Men Can Clean Too! — Games',text:raw,url:'https://www.mencancleantoo.com/win'}).then(function(){onComplete();}).catch(function(err){if(err&&err.name!=='AbortError'){showShareModal(raw,onComplete);}});}
+  else{showShareModal(raw,onComplete);}
+}
+
+function showShareModal(raw,onComplete){
+  var ex=document.getElementById('shareModal');if(ex)ex.remove();
+  var ov=document.createElement('div');ov.id='shareModal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box=document.createElement('div');
+  box.style.cssText='background:#1B2A4A;border:2px solid #E87722;border-radius:18px;padding:22px;max-width:320px;width:100%;text-align:center;';
+  box.innerHTML='<div style="font-family:Montserrat,sans-serif;font-size:14px;font-weight:900;color:#E87722;margin-bottom:10px;">📲 Share your score</div>'
+    +'<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:10px;font-size:11px;color:rgba(255,255,255,.8);line-height:1.6;text-align:left;margin-bottom:12px;font-family:monospace;white-space:pre-wrap;">'+raw+'</div>';
+  var copyBtn=document.createElement('button');
+  copyBtn.style.cssText='width:100%;background:#E87722;color:#fff;font-family:Montserrat,sans-serif;font-weight:900;font-size:13px;padding:13px;border-radius:10px;border:none;cursor:pointer;margin-bottom:8px;';
+  copyBtn.textContent='📋 Copy to clipboard';
+  copyBtn.onclick=function(){
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(raw).catch(function(){});}
+    else{var ta=document.createElement('textarea');ta.value=raw;ta.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);}
+    copyBtn.textContent='✓ Copied!';copyBtn.style.background='#00c864';
+    setTimeout(function(){
+      if(navigator.share){navigator.share({title:'Men Can Clean Too!',text:raw,url:'https://www.mencancleantoo.com/win'}).then(function(){ov.remove();onComplete();}).catch(function(){ov.remove();onComplete();});}
+      else{window.open('sms:?body='+encodeURIComponent(raw),'_self');setTimeout(function(){ov.remove();onComplete();},800);}
+    },300);
+  };
+  var closeBtn=document.createElement('button');
+  closeBtn.style.cssText='background:transparent;color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px 20px;font-size:12px;cursor:pointer;';
+  closeBtn.textContent='Close';closeBtn.onclick=function(){ov.remove();};
+  box.appendChild(copyBtn);box.appendChild(closeBtn);ov.appendChild(box);document.body.appendChild(ov);
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+}
+
+function spawnParticles(x,y,count){var colors=['#E87722','#FFE066','#00c864','#fff'];for(var i=0;i<count;i++){var p=document.createElement('div');p.className='particle';var a=(i/count)*Math.PI*2,d=30+MR()*60,s=4+MR()*6;p.style.cssText='left:'+x+'px;top:'+y+'px;width:'+s+'px;height:'+s+'px;background:'+colors[i%4]+';--tx:'+Math.cos(a)*d+'px;--ty:'+Math.sin(a)*d+'px;--dur:'+(0.4+MR()*.4)+'s;';document.body.appendChild(p);setTimeout(function(el){return function(){el.remove();};}(p),900);}}
+function spawnWinBurst(tier){var count=tier>=4?40:tier>=3?25:15;for(var i=0;i<count;i++){setTimeout(function(){spawnParticles(window.innerWidth/2,window.innerHeight*.35+MR()*80,12);},i*100);}}
+
+// ── KEYBOARD INPUT ──
+document.addEventListener('keydown',function(e){
+  if(e.ctrlKey||e.altKey||e.metaKey)return;
+  if(e.key==='Enter')onKey('ENTER');
+  else if(e.key==='Backspace')onKey('⌫');
+  else if(e.key.length===1){var k=e.key.toUpperCase();if(k>='A'&&k<='Z')onKey(k);}
+});
+
+// ══════════════════════
+// AUDIO ENGINE
+// ══════════════════════
+var AudioCtx=window.AudioContext||window.webkitAudioContext;
+var audioCtx=null,musicPlaying=false,musicInterval=null,masterGain=null;
+var soundEnabled=localStorage.getItem('mcct-sound')!=='off';
+
+function initAudio(){if(audioCtx)return;audioCtx=new AudioCtx();masterGain=audioCtx.createGain();masterGain.gain.value=soundEnabled?1:0;masterGain.connect(audioCtx.destination);}
+function toggleSound(){soundEnabled=!soundEnabled;localStorage.setItem('mcct-sound',soundEnabled?'on':'off');if(masterGain)masterGain.gain.value=soundEnabled?1:0;var b=document.getElementById('soundBtn');if(b)b.textContent=soundEnabled?'🔊':'🔇';}
+function resumeAudioContext(){if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();}
+function playTone(freq,type,startTime,duration,vol,attack,release){if(!audioCtx)return;var osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(masterGain);osc.type=type||'square';osc.frequency.value=freq;var now=startTime||audioCtx.currentTime,att=attack||.005,rel=release||.05,dur=duration||.1,v=vol||.3;gain.gain.setValueAtTime(0,now);gain.gain.linearRampToValueAtTime(v,now+att);gain.gain.setValueAtTime(v,now+dur-rel);gain.gain.linearRampToValueAtTime(0,now+dur);osc.start(now);osc.stop(now+dur+.01);}
+
+function sfxKey(){if(!audioCtx)return;playTone(440,'sine',0,.05,.08,.003,.02);}
+function sfxCorrect(){if(!audioCtx)return;var n=audioCtx.currentTime;playTone(659,'triangle',n,.1,.25,.005,.04);playTone(784,'triangle',n+.1,.1,.2,.005,.04);}
+function sfxPresent(){if(!audioCtx)return;playTone(523,'triangle',0,.1,.2,.005,.04);}
+function sfxAbsent(){if(!audioCtx)return;playTone(330,'sawtooth',0,.08,.12,.005,.04);}
+function sfxWinSound(){if(!audioCtx)return;var n=audioCtx.currentTime;[523,659,784,659,784,1047].forEach(function(f,i){playTone(f,'triangle',n+i*.1,.14,.28,.005,.04);});}
+function sfxDeath(){if(!audioCtx)return;var n=audioCtx.currentTime;[330,262,196,147].forEach(function(f,i){playTone(f,'sawtooth',n+i*.09,.12,.28,.005,.06);});}
+
+// SONG OF STORMS
+var SOS=[[294,2],[294,2],[587,8],[294,2],[294,2],[587,8],[294,4],[330,4],[294,4],[330,4],[294,8],[440,2],[440,2],[880,8],[440,2],[440,2],[880,8],[440,4],[494,4],[440,4],[494,4],[440,8],[587,4],[523,4],[494,4],[440,4],[392,4],[440,4],[494,4],[523,4],[587,4],[523,4],[494,4],[440,4],[392,8],[0,8],[294,4],[330,4],[392,4],[440,4],[494,4],[523,4],[587,4],[659,4],[587,4],[523,4],[494,4],[440,4],[392,8],[294,8],[294,2],[294,2],[587,8],[294,2],[294,2],[587,8],[294,4],[330,4],[294,4],[330,4],[294,8],[392,4],[440,4],[494,4],[523,4],[587,8],[523,4],[494,4],[440,4],[392,4],[330,4],[294,4],[294,8],[0,8]];
+var SOS_BASS=[[147,8],[165,8],[175,8],[196,8],[220,8],[196,8],[175,8],[165,8],[196,8],[220,8],[247,8],[262,8],[294,8],[262,8],[247,8],[196,8]];
+
+function startMusic(){
+  if(!audioCtx)return;stopMusic();
+  var bpm=148,sixteenth=(60/bpm)/4,noteIdx=0,bassIdx=0;
+  function next(){
+    if(!soundEnabled||!audioCtx||!musicPlaying)return;
+    var now=audioCtx.currentTime,note=SOS[noteIdx%SOS.length],freq=note[0],dur=note[1]*sixteenth;
+    if(freq>0){playTone(freq,'triangle',now,dur*.85,.16,.005,.03);if(freq>300)playTone(freq*1.5,'sine',now,dur*.7,.05,.005,.03);}
+    if(noteIdx%6===0){var bn=SOS_BASS[(bassIdx++)%SOS_BASS.length];if(bn[0]>0)playTone(bn[0],'triangle',now,bn[1]*sixteenth*.75,.18,.008,.05);}
+    noteIdx++;musicInterval=setTimeout(next,dur*1000);
+  }
+  musicPlaying=true;next();
+}
+function stopMusic(){musicPlaying=false;if(musicInterval){clearTimeout(musicInterval);musicInterval=null;}}
+
+// ── INIT ──
+buildStartLadder();
+document.getElementById('dateLabel').textContent=getDateLabel();
+document.getElementById('startDateLabel').textContent='Today — '+getDateLabel();
+document.getElementById('soundBtn').textContent=soundEnabled?'🔊':'🔇';
+
+</script>
+</body>
+</html>
