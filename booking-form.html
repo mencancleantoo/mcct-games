@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Book a Clean | Men Can Clean Too!</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+/* ══════════════════════════════════════
+   PRICING CONFIG — EDIT THESE NUMBERS
+   No other changes needed for pricing
+   ══════════════════════════════════════ */
+:root {
+  --or: #E87722;
+  --nv: #1B2A4A;
+  --gn: #00c864;
+  --gd: #FFE066;
+  --lt: #FFF8F2;
+  --bd: #F0E8DF;
+  --tx: #2a1f14;
+  --mt: #8a7060;
+}
+
+/* ══════════════════════════════════════
+   BASE
+   ══════════════════════════════════════ */
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{min-height:100%;background:var(--lt);}
+body{font-family:'DM Sans',sans-serif;color:var(--tx);}
+
+/* ══════════════════════════════════════
+   LAYOUT
+   ══════════════════════════════════════ */
+.page{max-width:560px;margin:0 auto;padding:0 0 80px;}
+
+/* HEADER */
+.hdr{background:var(--nv);padding:20px 24px 18px;position:sticky;top:0;z-index:100;}
+.hdr-inner{display:flex;align-items:center;justify-content:space-between;max-width:560px;margin:0 auto;}
+.logo{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:900;color:#fff;letter-spacing:.5px;}
+.logo span{color:var(--or);}
+.hdr-sub{font-size:11px;color:rgba(255,255,255,.45);margin-top:2px;}
+
+/* PROGRESS */
+.progress{background:var(--nv);padding:0 24px 16px;position:sticky;top:64px;z-index:99;}
+.progress-inner{max-width:560px;margin:0 auto;}
+.progress-track{height:4px;background:rgba(255,255,255,.12);border-radius:4px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--or);border-radius:4px;transition:width .4s ease;}
+.steps{display:flex;gap:0;margin-top:8px;}
+.step-dot{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
+.step-dot-circle{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:800;color:rgba(255,255,255,.4);transition:all .2s;}
+.step-dot.done .step-dot-circle{background:var(--or);color:#fff;}
+.step-dot.active .step-dot-circle{background:#fff;color:var(--nv);}
+.step-dot-label{font-size:9px;font-weight:600;color:rgba(255,255,255,.3);text-align:center;transition:color .2s;}
+.step-dot.active .step-dot-label{color:rgba(255,255,255,.7);}
+.step-dot.done .step-dot-label{color:rgba(255,255,255,.5);}
+
+/* PRICE STRIP */
+.price-strip{background:var(--or);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:138px;z-index:98;}
+.price-strip-label{font-size:11px;font-weight:600;color:rgba(255,255,255,.75);}
+.price-strip-val{font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:#fff;}
+.price-strip-freq{font-size:11px;color:rgba(255,255,255,.7);text-align:right;}
+
+/* STEPS */
+.step{display:none;padding:24px 24px 0;animation:fadeUp .3s ease;}
+.step.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+.step-title{font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:var(--nv);margin-bottom:4px;line-height:1.2;}
+.step-sub{font-size:14px;color:var(--mt);margin-bottom:24px;line-height:1.5;}
+
+/* OPTION CARDS */
+.option-grid{display:grid;gap:10px;margin-bottom:24px;}
+.option-grid.cols2{grid-template-columns:1fr 1fr;}
+.option-grid.cols3{grid-template-columns:1fr 1fr 1fr;}
+.opt{background:#fff;border:2px solid var(--bd);border-radius:14px;padding:16px 14px;cursor:pointer;transition:all .15s;text-align:center;position:relative;}
+.opt:active{transform:scale(.97);}
+.opt.selected{border-color:var(--or);background:rgba(232,119,34,.04);}
+.opt-icon{font-size:28px;margin-bottom:6px;}
+.opt-name{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:800;color:var(--nv);margin-bottom:2px;}
+.opt-desc{font-size:11px;color:var(--mt);line-height:1.4;}
+.opt-check{position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;background:var(--or);display:none;align-items:center;justify-content:center;font-size:11px;color:#fff;}
+.opt.selected .opt-check{display:flex;}
+
+/* FREQUENCY CARDS */
+.freq-card{background:#fff;border:2px solid var(--bd);border-radius:14px;padding:16px 18px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.freq-card:active{transform:scale(.98);}
+.freq-card.selected{border-color:var(--or);background:rgba(232,119,34,.04);}
+.freq-left{display:flex;flex-direction:column;}
+.freq-name{font-family:'Montserrat',sans-serif;font-size:15px;font-weight:800;color:var(--nv);}
+.freq-desc{font-size:12px;color:var(--mt);margin-top:2px;}
+.freq-right{text-align:right;}
+.freq-save{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:800;color:var(--gn);}
+.freq-once{font-size:11px;color:var(--mt);}
+.freq-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--bd);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:12px;transition:all .15s;}
+.freq-card.selected .freq-check{background:var(--or);border-color:var(--or);color:#fff;}
+
+/* COUNTER */
+.counter-row{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1.5px solid var(--bd);border-radius:14px;padding:14px 18px;margin-bottom:10px;}
+.counter-label{display:flex;flex-direction:column;}
+.counter-name{font-family:'Montserrat',sans-serif;font-size:14px;font-weight:800;color:var(--nv);}
+.counter-price{font-size:12px;color:var(--mt);margin-top:2px;}
+.counter-ctrl{display:flex;align-items:center;gap:14px;}
+.counter-btn{width:36px;height:36px;border-radius:50%;border:2px solid var(--bd);background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--nv);transition:all .12s;font-weight:700;}
+.counter-btn:active{transform:scale(.9);}
+.counter-btn.active{border-color:var(--or);color:var(--or);}
+.counter-val{font-family:'Montserrat',sans-serif;font-size:18px;font-weight:900;color:var(--nv);min-width:24px;text-align:center;}
+
+/* SQFT INPUT */
+.sqft-wrap{background:#fff;border:1.5px solid var(--bd);border-radius:14px;padding:16px 18px;margin-bottom:10px;}
+.sqft-label{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:800;color:var(--nv);margin-bottom:10px;}
+.sqft-input{width:100%;font-family:'Montserrat',sans-serif;font-size:24px;font-weight:900;color:var(--nv);border:none;background:transparent;outline:none;text-align:center;}
+.sqft-unit{text-align:center;font-size:12px;color:var(--mt);margin-top:4px;}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:6px;background:var(--bd);outline:none;margin:10px 0;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--or);cursor:pointer;box-shadow:0 2px 8px rgba(232,119,34,.3);}
+.sqft-ticks{display:flex;justify-content:space-between;font-size:10px;color:var(--mt);}
+
+/* ADD-ONS */
+.addon-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:24px;}
+.addon{background:#fff;border:2px solid var(--bd);border-radius:12px;padding:12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:10px;}
+.addon.selected{border-color:var(--or);background:rgba(232,119,34,.04);}
+.addon-icon{font-size:22px;flex-shrink:0;}
+.addon-info{flex:1;}
+.addon-name{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;color:var(--nv);}
+.addon-price{font-size:11px;color:var(--mt);margin-top:1px;}
+.addon-cb{width:18px;height:18px;border-radius:5px;border:2px solid var(--bd);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.addon.selected .addon-cb{background:var(--or);border-color:var(--or);color:#fff;font-size:10px;}
+
+/* DATE/TIME */
+.datetime-grid{display:grid;gap:10px;margin-bottom:24px;}
+.dt-label{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;color:var(--nv);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase;}
+.dt-input{width:100%;background:#fff;border:1.5px solid var(--bd);border-radius:12px;padding:14px 16px;font-family:'DM Sans',sans-serif;font-size:16px;color:var(--tx);outline:none;transition:border-color .15s;}
+.dt-input:focus{border-color:var(--or);}
+.time-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.time-opt{background:#fff;border:2px solid var(--bd);border-radius:10px;padding:12px 6px;text-align:center;cursor:pointer;transition:all .15s;}
+.time-opt.selected{border-color:var(--or);background:rgba(232,119,34,.04);}
+.time-opt-time{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:800;color:var(--nv);}
+.time-opt-label{font-size:10px;color:var(--mt);margin-top:2px;}
+
+/* CONTACT FORM */
+.field{margin-bottom:14px;}
+.field-label{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;color:var(--nv);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase;}
+.field-input{width:100%;background:#fff;border:1.5px solid var(--bd);border-radius:12px;padding:14px 16px;font-family:'DM Sans',sans-serif;font-size:16px;color:var(--tx);outline:none;transition:border-color .15s;}
+.field-input:focus{border-color:var(--or);}
+.field-input::placeholder{color:#bbb;}
+textarea.field-input{resize:none;min-height:80px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* SUMMARY */
+.summary-card{background:#fff;border:1.5px solid var(--bd);border-radius:16px;padding:20px;margin-bottom:16px;}
+.summary-title{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;color:var(--mt);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;}
+.summary-row{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--bd);}
+.summary-row:last-child{border-bottom:none;padding-bottom:0;}
+.summary-key{font-size:13px;color:var(--mt);}
+.summary-val{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:800;color:var(--nv);text-align:right;max-width:60%;}
+.summary-total{background:var(--nv);border-radius:14px;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.summary-total-label{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:800;color:rgba(255,255,255,.6);}
+.summary-total-val{font-family:'Montserrat',sans-serif;font-size:28px;font-weight:900;color:var(--or);}
+
+/* NOTICE */
+.notice{background:rgba(232,119,34,.08);border:1px solid rgba(232,119,34,.2);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--tx);line-height:1.6;}
+.notice strong{color:var(--or);}
+
+/* NAV BUTTONS */
+.nav{display:flex;gap:10px;padding:16px 24px 0;position:sticky;bottom:0;background:var(--lt);border-top:1px solid var(--bd);}
+.btn-back{flex:0 0 auto;background:#fff;border:2px solid var(--bd);border-radius:14px;padding:16px 20px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:800;color:var(--nv);cursor:pointer;transition:all .15s;}
+.btn-back:active{transform:scale(.97);}
+.btn-next{flex:1;background:var(--or);border:none;border-radius:14px;padding:16px;font-family:'Montserrat',sans-serif;font-size:15px;font-weight:900;color:#fff;cursor:pointer;transition:all .15s;letter-spacing:.5px;}
+.btn-next:active{transform:scale(.97);}
+.btn-next:disabled{opacity:.5;cursor:default;}
+.btn-submit{flex:1;background:var(--nv);border:none;border-radius:14px;padding:16px;font-family:'Montserrat',sans-serif;font-size:15px;font-weight:900;color:#fff;cursor:pointer;transition:all .15s;letter-spacing:.5px;}
+.btn-submit:active{transform:scale(.97);}
+.btn-submit:disabled{opacity:.5;cursor:default;}
+
+/* SUCCESS */
+#successScreen{display:none;padding:40px 24px;text-align:center;}
+#successScreen.on{display:block;animation:fadeUp .4s ease;}
+.success-icon{font-size:64px;margin-bottom:16px;animation:pop .5s cubic-bezier(.34,1.56,.64,1);}
+@keyframes pop{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}
+.success-title{font-family:'Montserrat',sans-serif;font-size:28px;font-weight:900;color:var(--nv);margin-bottom:8px;}
+.success-sub{font-size:15px;color:var(--mt);line-height:1.65;max-width:320px;margin:0 auto 24px;}
+.success-box{background:#fff;border:1.5px solid var(--bd);border-radius:16px;padding:20px;margin-bottom:20px;text-align:left;}
+.success-box-title{font-family:'Montserrat',sans-serif;font-size:11px;font-weight:800;color:var(--mt);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;}
+.success-row{font-size:13px;color:var(--tx);padding:5px 0;display:flex;justify-content:space-between;}
+.success-row strong{font-weight:700;color:var(--nv);}
+.success-amount{font-family:'Montserrat',sans-serif;font-size:32px;font-weight:900;color:var(--or);text-align:center;margin:16px 0 4px;}
+.success-amount-label{font-size:12px;color:var(--mt);text-align:center;margin-bottom:20px;}
+.success-note{font-size:12px;color:var(--mt);line-height:1.6;background:rgba(232,119,34,.06);border-radius:10px;padding:12px 14px;}
+
+/* LOADING */
+.loading{display:none;position:fixed;inset:0;background:rgba(255,248,242,.9);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:12px;}
+.loading.on{display:flex;}
+.spinner{width:40px;height:40px;border:3px solid var(--bd);border-top-color:var(--or);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:800;color:var(--nv);}
+
+/* ERROR */
+.error-msg{background:rgba(255,50,50,.08);border:1px solid rgba(255,50,50,.2);border-radius:10px;padding:10px 14px;font-size:13px;color:#cc2200;margin-bottom:12px;display:none;}
+.error-msg.on{display:block;}
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text">Sending your booking...</div>
+</div>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hdr-inner">
+      <div>
+        <div class="logo">Men Can Clean <span>Too!</span></div>
+        <div class="hdr-sub">Springfield, MO · (417) 719-1380</div>
+      </div>
+      <div style="font-size:22px;">🧹</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress">
+    <div class="progress-inner">
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:16%;"></div></div>
+      <div class="steps" id="stepsBar"></div>
+    </div>
+  </div>
+
+  <!-- PRICE STRIP -->
+  <div class="price-strip" id="priceStrip" style="display:none;">
+    <div>
+      <div class="price-strip-label">Estimated Total</div>
+      <div class="price-strip-val" id="priceStripVal">$0</div>
+    </div>
+    <div class="price-strip-freq" id="priceStripFreq"></div>
+  </div>
+
+  <!-- ── STEP 1: SERVICE TYPE ── -->
+  <div class="step active" id="step1">
+    <div class="step-title">What type of clean?</div>
+    <div class="step-sub">We'll build your price as you go.</div>
+    <div class="option-grid cols2">
+      <div class="opt" onclick="selectService('recurring')">
+        <div class="opt-check">✓</div>
+        <div class="opt-icon">🔁</div>
+        <div class="opt-name">Recurring Clean</div>
+        <div class="opt-desc">Weekly, bi-weekly, or monthly. Save up to 75%.</div>
+      </div>
+      <div class="opt" onclick="selectService('deep')">
+        <div class="opt-check">✓</div>
+        <div class="opt-icon">✨</div>
+        <div class="opt-name">Deep Clean</div>
+        <div class="opt-desc">Top-to-bottom thorough cleaning.</div>
+      </div>
+      <div class="opt" onclick="selectService('movein')">
+        <div class="opt-check">✓</div>
+        <div class="opt-icon">📦</div>
+        <div class="opt-name">Move In Clean</div>
+        <div class="opt-desc">Fresh start in your new home.</div>
+      </div>
+      <div class="opt" onclick="selectService('moveout')">
+        <div class="opt-check">✓</div>
+        <div class="opt-icon">🚛</div>
+        <div class="opt-name">Move Out Clean</div>
+        <div class="opt-desc">Leave it spotless for the next owner.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: FREQUENCY (recurring only) ── -->
+  <div class="step" id="step2">
+    <div class="step-title">How often?</div>
+    <div class="step-sub">More frequent = bigger savings on every clean.</div>
+    <div id="freqOptions"></div>
+  </div>
+
+  <!-- ── STEP 3: HOME SIZE ── -->
+  <div class="step" id="step3">
+    <div class="step-title">Tell us about your home.</div>
+    <div class="step-sub">This is how we calculate your price.</div>
+
+    <div class="counter-row">
+      <div class="counter-label">
+        <div class="counter-name">Bedrooms</div>
+        <div class="counter-price" id="bdPrice">$30 per room</div>
+      </div>
+      <div class="counter-ctrl">
+        <button class="counter-btn" onclick="adjust('bd',-1)">−</button>
+        <div class="counter-val" id="bdVal">2</div>
+        <button class="counter-btn active" onclick="adjust('bd',1)">+</button>
+      </div>
+    </div>
+
+    <div class="counter-row">
+      <div class="counter-label">
+        <div class="counter-name">Full Bathrooms</div>
+        <div class="counter-price" id="fbPrice">$60 per bathroom</div>
+      </div>
+      <div class="counter-ctrl">
+        <button class="counter-btn" onclick="adjust('fb',-1)">−</button>
+        <div class="counter-val" id="fbVal">1</div>
+        <button class="counter-btn active" onclick="adjust('fb',1)">+</button>
+      </div>
+    </div>
+
+    <div class="counter-row">
+      <div class="counter-label">
+        <div class="counter-name">Half Bathrooms</div>
+        <div class="counter-price">$30 per half-bath</div>
+      </div>
+      <div class="counter-ctrl">
+        <button class="counter-btn" onclick="adjust('hb',-1)">−</button>
+        <div class="counter-val" id="hbVal">0</div>
+        <button class="counter-btn active" onclick="adjust('hb',1)">+</button>
+      </div>
+    </div>
+
+    <div class="sqft-wrap">
+      <div class="sqft-label">Square Footage — $12 per 100 sq ft</div>
+      <input type="number" class="sqft-input" id="sqftInput" value="1200" min="200" max="6000" oninput="onSqftInput(this.value)">
+      <div class="sqft-unit">square feet</div>
+      <input type="range" id="sqftSlider" min="200" max="6000" step="100" value="1200" oninput="onSqftSlider(this.value)">
+      <div class="sqft-ticks"><span>200</span><span>1500</span><span>3000</span><span>4500</span><span>6000</span></div>
+    </div>
+  </div>
+
+  <!-- ── STEP 4: ADD-ONS ── -->
+  <div class="step" id="step4">
+    <div class="step-title">Any extras?</div>
+    <div class="step-sub">Add-ons are priced per item. Tap to select.</div>
+    <div class="addon-grid" id="addonGrid"></div>
+  </div>
+
+  <!-- ── STEP 5: DATE & TIME ── -->
+  <div class="step" id="step5">
+    <div class="step-title">When works for you?</div>
+    <div class="step-sub">We need at least 5 days to schedule your clean.</div>
+    <div class="datetime-grid">
+      <div>
+        <div class="dt-label">Preferred Date</div>
+        <input type="date" class="dt-input" id="dateInput">
+      </div>
+      <div>
+        <div class="dt-label">Preferred Start Time</div>
+        <div class="time-grid" id="timeGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 6: CONTACT ── -->
+  <div class="step" id="step6">
+    <div class="step-title">Almost done.</div>
+    <div class="step-sub">We'll confirm your booking within 24 hours.</div>
+    <div class="field-row">
+      <div class="field">
+        <div class="field-label">First Name</div>
+        <input type="text" class="field-input" id="fname" placeholder="Sarah">
+      </div>
+      <div class="field">
+        <div class="field-label">Last Name</div>
+        <input type="text" class="field-input" id="lname" placeholder="Johnson">
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">Email</div>
+      <input type="email" class="field-input" id="email" placeholder="sarah@email.com">
+    </div>
+    <div class="field">
+      <div class="field-label">Phone</div>
+      <input type="tel" class="field-input" id="phone" placeholder="(417) 555-0100">
+    </div>
+    <div class="field">
+      <div class="field-label">Home Address</div>
+      <input type="text" class="field-input" id="address" placeholder="123 Main St, Springfield, MO">
+    </div>
+    <div class="field">
+      <div class="field-label">Anything we should know?</div>
+      <textarea class="field-input" id="notes" placeholder="Pets, gate code, parking instructions..."></textarea>
+    </div>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- ── STEP 7: REVIEW ── -->
+  <div class="step" id="step7">
+    <div class="step-title">Review your booking.</div>
+    <div class="step-sub">Everything look right?</div>
+    <div class="summary-card" id="summaryCard"></div>
+    <div class="summary-total">
+      <div class="summary-total-label">Estimated Total</div>
+      <div class="summary-total-val" id="summaryTotal">$0</div>
+    </div>
+    <div class="notice">
+      <strong>No payment now.</strong> We'll confirm your date and send an invoice before your clean. You only pay after we confirm.
+    </div>
+    <div class="error-msg" id="submitError"></div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div id="successScreen">
+    <div class="success-icon">🎉</div>
+    <div class="success-title">You're on the books.</div>
+    <div class="success-sub">We've received your request and will confirm within 24 hours. Check your email for a copy of this request.</div>
+    <div class="success-box" id="successBox"></div>
+    <div class="success-amount" id="successAmount"></div>
+    <div class="success-amount-label">Estimated total — invoiced before your clean</div>
+    <div class="success-note">Questions? Call or text us at <strong>(417) 719-1380</strong> or email <strong>contact@mencancleantoo.com</strong></div>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav" id="navBar">
+    <button class="btn-back" id="btnBack" onclick="goBack()" style="display:none;">← Back</button>
+    <button class="btn-next" id="btnNext" onclick="goNext()" disabled>Continue →</button>
+    <button class="btn-submit" id="btnSubmit" onclick="submitBooking()" style="display:none;">Confirm Booking →</button>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// PRICING CONFIG — EDIT HERE, NOWHERE ELSE
+// ══════════════════════════════════════════════
+var PRICE = {
+  bedroom:    30,     // per bedroom
+  fullBath:   60,     // per full bathroom
+  halfBath:   30,     // per half bathroom
+  sqftPer100: 12,     // per 100 sq ft
+
+  // Recurring discounts — percentage OFF the base price
+  frequency: {
+    weekly:    0.75,  // 75% off
+    biweekly:  0.70,  // 70% off
+    every3:    0.68,  // 68% off
+    monthly:   0.60,  // 60% off
+  },
+
+  // Add-ons — set prices here
+  addons: [
+    {id:'oven',       icon:'🔥', name:'Inside Oven',          price:45},
+    {id:'fridge',     icon:'🧊', name:'Inside Fridge',         price:45},
+    {id:'cabinets',   icon:'🪵', name:'Inside Cabinets',       price:60},
+    {id:'windows',    icon:'🪟', name:'Interior Windows',      price:0},   // set price
+    {id:'blinds',     icon:'🪞', name:'Wet Wipe Blinds',       price:0},   // set price
+    {id:'laundry',    icon:'👕', name:'Laundry & Folding',     price:0},   // set price
+    {id:'dishes',     icon:'🍽️', name:'Dishes',               price:0},   // set price
+    {id:'organize',   icon:'📦', name:'Organization',          price:0},   // set price
+  ]
+};
+
+var EMAILJS_SERVICE_ID  = 'YOUR_SERVICE_ID';   // replace after EmailJS setup
+var EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';  // replace after EmailJS setup
+var EMAILJS_PUBLIC_KEY  = 'YOUR_PUBLIC_KEY';   // replace after EmailJS setup
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+var state = {
+  service:   null,   // recurring|deep|movein|moveout
+  frequency: null,   // weekly|biweekly|every3|monthly
+  bedrooms:  2,
+  fullBaths: 1,
+  halfBaths: 0,
+  sqft:      1200,
+  addons:    [],
+  date:      '',
+  time:      '',
+  fname:'', lname:'', email:'', phone:'', address:'', notes:''
+};
+
+var STEP_LABELS = ['Service','Frequency','Home Size','Extras','Date & Time','Contact','Review'];
+var totalSteps  = 7;
+var currentStep = 1;
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+(function init() {
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+  buildStepsBar();
+  buildFreqOptions();
+  buildAddonGrid();
+  buildTimeGrid();
+  setMinDate();
+  updateNav();
+})();
+
+function buildStepsBar() {
+  var bar = document.getElementById('stepsBar');
+  bar.innerHTML = '';
+  STEP_LABELS.forEach(function(label, i) {
+    var div = document.createElement('div');
+    div.className = 'step-dot' + (i === 0 ? ' active' : '');
+    div.id = 'stepDot' + (i+1);
+    div.innerHTML = '<div class="step-dot-circle">' + (i+1) + '</div><div class="step-dot-label">' + label + '</div>';
+    bar.appendChild(div);
+  });
+}
+
+function buildFreqOptions() {
+  var freqs = [
+    {id:'weekly',   name:'Weekly',        desc:'Every week',                save:'75% savings'},
+    {id:'biweekly', name:'Bi-Weekly',     desc:'Every two weeks',           save:'70% savings'},
+    {id:'every3',   name:'Every 3 Weeks', desc:'Every three weeks',         save:'68% savings'},
+    {id:'monthly',  name:'Monthly',       desc:'Once a month',              save:'60% savings'},
+  ];
+  var el = document.getElementById('freqOptions');
+  el.innerHTML = freqs.map(function(f) {
+    return '<div class="freq-card" id="freq_'+f.id+'" onclick="selectFreq(\''+f.id+'\')">'
+      + '<div class="freq-left"><div class="freq-name">'+f.name+'</div><div class="freq-desc">'+f.desc+'</div></div>'
+      + '<div class="freq-right"><div class="freq-save">'+f.save+'</div><div class="freq-once">on every clean</div></div>'
+      + '<div class="freq-check">✓</div>'
+      + '</div>';
+  }).join('');
+}
+
+function buildAddonGrid() {
+  var el = document.getElementById('addonGrid');
+  el.innerHTML = PRICE.addons.map(function(a) {
+    var priceStr = a.price > 0 ? '+$' + a.price : 'Call for price';
+    return '<div class="addon" id="addon_'+a.id+'" onclick="toggleAddon(\''+a.id+'\')">'
+      + '<div class="addon-icon">'+a.icon+'</div>'
+      + '<div class="addon-info"><div class="addon-name">'+a.name+'</div><div class="addon-price">'+priceStr+'</div></div>'
+      + '<div class="addon-cb">✓</div>'
+      + '</div>';
+  }).join('');
+}
+
+function buildTimeGrid() {
+  var times = [
+    {val:'8am',  label:'8:00 AM',  sub:'Morning'},
+    {val:'10am', label:'10:00 AM', sub:'Mid-Morning'},
+    {val:'12pm', label:'12:00 PM', sub:'Noon'},
+    {val:'2pm',  label:'2:00 PM',  sub:'Afternoon'},
+    {val:'4pm',  label:'4:00 PM',  sub:'Late Afternoon'},
+    {val:'flex', label:'Flexible', sub:'Any time'},
+  ];
+  document.getElementById('timeGrid').innerHTML = times.map(function(t) {
+    return '<div class="time-opt" id="time_'+t.val+'" onclick="selectTime(\''+t.val+'\')">'
+      + '<div class="time-opt-time">'+t.label+'</div>'
+      + '<div class="time-opt-label">'+t.sub+'</div>'
+      + '</div>';
+  }).join('');
+}
+
+function setMinDate() {
+  var min = new Date();
+  min.setDate(min.getDate() + 5);
+  var inp = document.getElementById('dateInput');
+  inp.min = min.toISOString().split('T')[0];
+  inp.addEventListener('change', function() {
+    state.date = this.value;
+    updateNav();
+  });
+}
+
+// ══════════════════════════════════════════════
+// SELECTIONS
+// ══════════════════════════════════════════════
+function selectService(svc) {
+  state.service = svc;
+  document.querySelectorAll('#step1 .opt').forEach(function(el) { el.classList.remove('selected'); });
+  var key = {recurring:'recurring',deep:'deep',movein:'movein',moveout:'moveout'};
+  document.querySelectorAll('#step1 .opt').forEach(function(el, i) {
+    var svcs = ['recurring','deep','movein','moveout'];
+    if (svcs[i] === svc) el.classList.add('selected');
+  });
+  updatePrice();
+  updateNav();
+}
+
+function selectFreq(freq) {
+  state.frequency = freq;
+  document.querySelectorAll('.freq-card').forEach(function(el) { el.classList.remove('selected'); });
+  document.getElementById('freq_' + freq).classList.add('selected');
+  updatePrice();
+  updateNav();
+}
+
+function adjust(field, delta) {
+  var mins = {bd:0, fb:0, hb:0};
+  var maxs = {bd:10, fb:8, hb:6};
+  var keys = {bd:'bedrooms', fb:'fullBaths', hb:'halfBaths'};
+  var ids  = {bd:'bdVal', fb:'fbVal', hb:'hbVal'};
+  state[keys[field]] = Math.max(mins[field], Math.min(maxs[field], state[keys[field]] + delta));
+  document.getElementById(ids[field]).textContent = state[keys[field]];
+  updatePrice();
+}
+
+function onSqftInput(val) {
+  state.sqft = Math.max(200, Math.min(6000, parseInt(val) || 200));
+  document.getElementById('sqftSlider').value = state.sqft;
+  updatePrice();
+}
+
+function onSqftSlider(val) {
+  state.sqft = parseInt(val);
+  document.getElementById('sqftInput').value = state.sqft;
+  updatePrice();
+}
+
+function toggleAddon(id) {
+  var idx = state.addons.indexOf(id);
+  if (idx > -1) state.addons.splice(idx, 1);
+  else state.addons.push(id);
+  document.getElementById('addon_' + id).classList.toggle('selected', state.addons.indexOf(id) > -1);
+  updatePrice();
+}
+
+function selectTime(val) {
+  state.time = val;
+  document.querySelectorAll('.time-opt').forEach(function(el) { el.classList.remove('selected'); });
+  document.getElementById('time_' + val).classList.add('selected');
+  updateNav();
+}
+
+// ══════════════════════════════════════════════
+// PRICE CALC
+// ══════════════════════════════════════════════
+function calcPrice() {
+  var base = 0;
+  base += state.bedrooms  * PRICE.bedroom;
+  base += state.fullBaths * PRICE.fullBath;
+  base += state.halfBaths * PRICE.halfBath;
+  base += Math.ceil(state.sqft / 100) * PRICE.sqftPer100;
+
+  // Add-ons
+  state.addons.forEach(function(id) {
+    var a = PRICE.addons.find(function(x) { return x.id === id; });
+    if (a && a.price > 0) base += a.price;
+  });
+
+  // Frequency discount
+  var discount = 0;
+  if (state.service === 'recurring' && state.frequency) {
+    discount = PRICE.frequency[state.frequency] || 0;
+  }
+  var total = base * (1 - discount);
+  return {base: base, discount: discount, total: Math.round(total * 100) / 100};
+}
+
+function updatePrice() {
+  var p = calcPrice();
+  var strip = document.getElementById('priceStrip');
+  if (currentStep >= 3) {
+    strip.style.display = 'flex';
+    document.getElementById('priceStripVal').textContent = '$' + p.total.toFixed(2);
+    var freqLabels = {weekly:'Weekly',biweekly:'Bi-Weekly',every3:'Every 3 Wks',monthly:'Monthly'};
+    document.getElementById('priceStripFreq').textContent = state.frequency
+      ? freqLabels[state.frequency] + '\n' + Math.round(p.discount*100) + '% off'
+      : '';
+  } else {
+    strip.style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════
+function getStepCount() {
+  return state.service === 'recurring' ? 7 : 6;
+}
+
+function getRealStep(display) {
+  // If not recurring, skip step 2 (frequency)
+  if (state.service !== 'recurring' && display >= 2) return display + 1;
+  return display;
+}
+
+function isStepValid() {
+  switch(currentStep) {
+    case 1: return !!state.service;
+    case 2: return state.service !== 'recurring' || !!state.frequency;
+    case 3: return true;
+    case 4: return true;
+    case 5: return !!state.date && !!state.time;
+    case 6: return !!(state.fname && state.lname && state.email && state.phone && state.address);
+    case 7: return true;
+  }
+  return false;
+}
+
+function updateNav() {
+  var valid = isStepValid();
+  document.getElementById('btnNext').disabled = !valid;
+  document.getElementById('btnBack').style.display = currentStep > 1 ? 'block' : 'none';
+  document.getElementById('btnNext').style.display = currentStep < 7 ? 'block' : 'none';
+  document.getElementById('btnSubmit').style.display = currentStep === 7 ? 'block' : 'none';
+
+  // Update progress
+  var pct = Math.round((currentStep / 7) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+
+  // Update step dots
+  for (var i = 1; i <= 7; i++) {
+    var dot = document.getElementById('stepDot' + i);
+    if (!dot) continue;
+    dot.className = 'step-dot' + (i < currentStep ? ' done' : i === currentStep ? ' active' : '');
+  }
+
+  // Live validation for contact step
+  if (currentStep === 6) {
+    ['fname','lname','email','phone','address'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.oninput = function() {
+        state[id] = this.value.trim();
+        updateNav();
+      };
+    });
+    var notes = document.getElementById('notes');
+    if (notes) notes.oninput = function() { state.notes = this.value; };
+  }
+}
+
+function goNext() {
+  if (!isStepValid()) return;
+
+  // Skip step 2 if not recurring
+  var next = currentStep + 1;
+  if (next === 2 && state.service !== 'recurring') next = 3;
+
+  showStep(next);
+}
+
+function goBack() {
+  var prev = currentStep - 1;
+  if (prev === 2 && state.service !== 'recurring') prev = 1;
+  showStep(prev);
+}
+
+function showStep(n) {
+  document.getElementById('step' + currentStep).classList.remove('active');
+  currentStep = n;
+  document.getElementById('step' + currentStep).classList.add('active');
+  if (currentStep === 7) buildSummary();
+  updatePrice();
+  updateNav();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+// ══════════════════════════════════════════════
+// SUMMARY
+// ══════════════════════════════════════════════
+function buildSummary() {
+  var p = calcPrice();
+  var svcNames = {recurring:'Recurring Clean', deep:'Deep Clean', movein:'Move In Clean', moveout:'Move Out Clean'};
+  var freqNames = {weekly:'Weekly', biweekly:'Bi-Weekly', every3:'Every 3 Weeks', monthly:'Monthly'};
+  var addonNames = state.addons.map(function(id) {
+    var a = PRICE.addons.find(function(x) { return x.id === id; });
+    return a ? a.name : id;
+  });
+  var timeLabels = {
+    '8am':'8:00 AM','10am':'10:00 AM','12pm':'12:00 PM',
+    '2pm':'2:00 PM','4pm':'4:00 PM','flex':'Flexible'
+  };
+
+  var rows = [
+    {k:'Service', v: svcNames[state.service] || state.service},
+    state.frequency ? {k:'Frequency', v: freqNames[state.frequency]} : null,
+    {k:'Bedrooms', v: state.bedrooms},
+    {k:'Full Bathrooms', v: state.fullBaths},
+    state.halfBaths > 0 ? {k:'Half Bathrooms', v: state.halfBaths} : null,
+    {k:'Square Footage', v: state.sqft.toLocaleString() + ' sq ft'},
+    addonNames.length ? {k:'Add-ons', v: addonNames.join(', ')} : null,
+    {k:'Date', v: formatDate(state.date)},
+    {k:'Time', v: timeLabels[state.time] || state.time},
+    {k:'Name', v: state.fname + ' ' + state.lname},
+    {k:'Email', v: state.email},
+    {k:'Phone', v: state.phone},
+    {k:'Address', v: state.address},
+    state.notes ? {k:'Notes', v: state.notes} : null,
+  ].filter(Boolean);
+
+  document.getElementById('summaryCard').innerHTML = '<div class="summary-title">Booking Details</div>'
+    + rows.map(function(r) {
+      return '<div class="summary-row"><div class="summary-key">'+r.k+'</div><div class="summary-val">'+r.v+'</div></div>';
+    }).join('');
+
+  document.getElementById('summaryTotal').textContent = '$' + p.total.toFixed(2);
+}
+
+function formatDate(str) {
+  if (!str) return '';
+  var d = new Date(str + 'T12:00:00');
+  return d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+}
+
+// ══════════════════════════════════════════════
+// SUBMIT
+// ══════════════════════════════════════════════
+function submitBooking() {
+  var errEl = document.getElementById('submitError');
+  errEl.className = 'error-msg';
+  errEl.textContent = '';
+
+  var p = calcPrice();
+  var svcNames = {recurring:'Recurring Clean',deep:'Deep Clean',movein:'Move In Clean',moveout:'Move Out Clean'};
+  var freqNames = {weekly:'Weekly',biweekly:'Bi-Weekly',every3:'Every 3 Weeks',monthly:'Monthly'};
+  var addonNames = state.addons.map(function(id) {
+    var a = PRICE.addons.find(function(x){ return x.id===id; });
+    return a ? a.name : id;
+  }).join(', ') || 'None';
+  var timeLabels = {'8am':'8:00 AM','10am':'10:00 AM','12pm':'12:00 PM','2pm':'2:00 PM','4pm':'4:00 PM','flex':'Flexible'};
+
+  var params = {
+    to_email:   'contact@mencancleantoo.com',
+    reply_to:   state.email,
+    client_name: state.fname + ' ' + state.lname,
+    client_email: state.email,
+    client_phone: state.phone,
+    client_address: state.address,
+    service:    svcNames[state.service],
+    frequency:  state.frequency ? freqNames[state.frequency] : 'N/A',
+    bedrooms:   state.bedrooms,
+    full_baths: state.fullBaths,
+    half_baths: state.halfBaths,
+    sqft:       state.sqft.toLocaleString(),
+    addons:     addonNames,
+    date:       formatDate(state.date),
+    time:       timeLabels[state.time] || state.time,
+    notes:      state.notes || 'None',
+    total:      '$' + p.total.toFixed(2),
+    base_price: '$' + p.base.toFixed(2),
+    discount:   p.discount > 0 ? Math.round(p.discount*100) + '% recurring discount' : 'None',
+  };
+
+  document.getElementById('loading').classList.add('on');
+  document.getElementById('btnSubmit').disabled = true;
+
+  // Check if EmailJS is configured
+  if (EMAILJS_SERVICE_ID === 'YOUR_SERVICE_ID') {
+    // Demo mode — show success without actually sending
+    setTimeout(function() {
+      document.getElementById('loading').classList.remove('on');
+      showSuccess(params, p);
+    }, 1500);
+    return;
+  }
+
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
+    .then(function() {
+      document.getElementById('loading').classList.remove('on');
+      showSuccess(params, p);
+    })
+    .catch(function(err) {
+      document.getElementById('loading').classList.remove('on');
+      document.getElementById('btnSubmit').disabled = false;
+      errEl.textContent = 'Something went wrong. Please call us at (417) 719-1380.';
+      errEl.className = 'error-msg on';
+      console.error('EmailJS error:', err);
+    });
+}
+
+function showSuccess(params, p) {
+  // Hide form elements
+  document.getElementById('navBar').style.display = 'none';
+  document.getElementById('priceStrip').style.display = 'none';
+  for (var i = 1; i <= 7; i++) {
+    document.getElementById('step' + i).style.display = 'none';
+  }
+
+  document.getElementById('successBox').innerHTML = [
+    {k:'Name', v: params.client_name},
+    {k:'Service', v: params.service},
+    params.frequency !== 'N/A' ? {k:'Frequency', v: params.frequency} : null,
+    {k:'Date', v: params.date},
+    {k:'Time', v: params.time},
+    {k:'Address', v: params.client_address},
+    params.addons !== 'None' ? {k:'Add-ons', v: params.addons} : null,
+  ].filter(Boolean).map(function(r) {
+    return '<div class="success-row"><span>'+r.k+'</span><strong>'+r.v+'</strong></div>';
+  }).join('');
+
+  document.getElementById('successAmount').textContent = '$' + p.total.toFixed(2);
+  document.getElementById('successScreen').classList.add('on');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+</script>
+</body>
+</html>
